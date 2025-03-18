@@ -7,8 +7,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <!-- Ajuste conforme seu padrão de organização -->
-    <groupId>37a4147b-4673-4cb6-b589-358074a13f8c</groupId>
-    <artifactId>mule-parent</artifactId>
+    <groupId>com.leonel.integration</groupId>
+    <artifactId>mule-common-parent</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
 

@@ -7,8 +7,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <!-- Ajuste groupId/artifactId conforme desejar -->
-    <groupId>37a4147b-4673-4cb6-b589-358074a13f8c</groupId>
-    <artifactId>mule-bom</artifactId>
+    <groupId>com.leonel.integration</groupId>
+    <artifactId>mule-common-bom</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
