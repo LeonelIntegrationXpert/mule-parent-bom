@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Ajuste conforme seu padrão de organização -->
+    <groupId>37a4147b-4673-4cb6-b589-358074a13f8c</groupId>
+    <artifactId>mule-parent</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <name>mule-parent</name>
+
+    <!-- ============================================= -->
+    <!-- =         PROPRIEDADES COMPARTILHADAS        = -->
+    <!-- ============================================= -->
+    <properties>
+        <!-- Build / Encoding -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>8</java.version>
+
+        <!-- Mule Runtime & Release Channel (LTS ou EA) -->
+        <app.runtime>4.6.14</app.runtime>
+        <releaseChannel>LTS</releaseChannel>
+
+        <!-- Versões de Plugins -->
+        <mule.maven.plugin.version>4.4.0</mule.maven.plugin.version>
+        <maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
+
+        <!-- Configurações de ambiente / CloudHub -->
+        <env>Sandbox</env>
+        <region>Cloudhub-US-East-2</region>
+        <cloudhub.vcores>0.1</cloudhub.vcores>
+        <cloudhub.replicas>1</cloudhub.replicas>
+        <provider>MC</provider>
+        <generateDefaultPublicUrl>true</generateDefaultPublicUrl>
+
+        <!-- API e Visualizer -->
+        <api.id>SEU_API_ID</api.id>
+        <api.version>1.0</api.version>
+        <visualizer.tags>demonstracao, leonel, api-layer</visualizer.tags>
+
+        <!-- Aplicação (nome, layer, etc.) -->
+        <app.layer>api</app.layer>
+        <!-- Padrão: artifactId-layer-env -->
+        <app.namingPattern>${project.artifactId}-${app.layer}-${env}</app.namingPattern>
+
+        <!-- Propriedades Mule Maven Plugin (chave etc.) -->
+        <key>Chave descript aqui...</key>
+
+        <!-- URLs de repositórios e layouts -->
+        <serverId>Repository</serverId>
+        <anypoint.platform.url>https://anypoint.mulesoft.com</anypoint.platform.url>
+        <base.maven.anypoint.url>https://maven.anypoint.mulesoft.com/api/v3</base.maven.anypoint.url>
+        <anypoint.exchange.v3.url>${base.maven.anypoint.url}/maven</anypoint.exchange.v3.url>
+        <private.exchange.url>${base.maven.anypoint.url}/organizations/${project.groupId}/maven</private.exchange.url>
+
+        <mulesoft-releases.layout>default</mulesoft-releases.layout>
+        <anypoint-exchange-v3.layout>default</anypoint-exchange-v3.layout>
+        <private-exchange-repository.layout>default</private-exchange-repository.layout>
+        <corporate-repository.layout>default</corporate-repository.layout>
+
+        <!-- Configurações MUnit (cobertura) -->
+        <coverage.runCoverage>true</coverage.runCoverage>
+        <coverage.failBuild>true</coverage.failBuild>
+        <coverage.requiredCoverage>90</coverage.requiredCoverage>
+        <coverage.format.console>console</coverage.format.console>
+        <coverage.format.sonar>sonar</coverage.format.sonar>
+        <coverage.format.json>json</coverage.format.json>
+        <coverage.format.html>html</coverage.format.html>
+    </properties>
+
+    <!-- ============================================= -->
+    <!-- =           PLUGIN MANAGEMENT               = -->
+    <!-- ============================================= -->
+    <build>
+        <!-- Seta nome final do artefato -->
+        <finalName>${app.namingPattern}</finalName>
+
+        <pluginManagement>
+            <plugins>
+
+                <!-- Plugin de limpeza (pasta target) -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>${maven-clean-plugin.version}</version>
+                </plugin>
+
+                <!-- Mule Maven Plugin -->
+                <plugin>
+                    <groupId>org.mule.tools.maven</groupId>
+                    <artifactId>mule-maven-plugin</artifactId>
+                    <version>${mule.maven.plugin.version}</version>
+                    <extensions>true</extensions>
+                    <configuration>
+                        <classifier>mule-application</classifier>
+
+                        <!-- Deploy CloudHub 2.0 -->
+                        <cloudhub2Deployment>
+                            <uri>${anypoint.platform.url}</uri>
+                            <provider>${provider}</provider>
+                            <environment>${env}</environment>
+                            <target>${region}</target>
+                            <server>${serverId}</server>
+
+                            <applicationName>${app.namingPattern}</applicationName>
+                            <muleVersion>${app.runtime}</muleVersion>
+                            <releaseChannel>${releaseChannel}</releaseChannel>
+
+                            <replicas>${cloudhub.replicas}</replicas>
+                            <vCores>${cloudhub.vcores}</vCores>
+                            <javaVersion>${java.version}</javaVersion>
+
+                            <deploymentSettings>
+                                <generateDefaultPublicUrl>${generateDefaultPublicUrl}</generateDefaultPublicUrl>
+                                <updateStrategy>rolling</updateStrategy>
+                                <lastMileSecurity>disabled</lastMileSecurity>
+                                <forwardSslSession>disabled</forwardSslSession>
+                                <disableAmLogForwarding>enabled</disableAmLogForwarding>
+                                <clustered>disabled</clustered>
+                            </deploymentSettings>
+
+                            <integrations>
+                                <services>
+                                    <objectStoreV2>
+                                        <enabled>true</enabled>
+                                    </objectStoreV2>
+                                </services>
+                            </integrations>
+
+                            <secureProperties>
+                                <key>${key}</key>
+                            </secureProperties>
+
+                            <properties>
+                                <env>${env}</env>
+                                <api.id>${api.id}</api.id>
+                                <api.version>${api.version}</api.version>
+                                <anypoint.platform.visualizer.tags>${visualizer.tags}</anypoint.platform.visualizer.tags>
+                            </properties>
+                        </cloudhub2Deployment>
+                    </configuration>
+                </plugin>
+
+                <!-- MUnit Maven Plugin -->
+                <plugin>
+                    <groupId>com.mulesoft.munit.tools</groupId>
+                    <artifactId>munit-maven-plugin</artifactId>
+                    <!-- A versão exata do MUnit plugin pode ficar no BOM ou aqui -->
+                    <configuration>
+                        <coverage>
+                            <runCoverage>${coverage.runCoverage}</runCoverage>
+                            <failBuild>${coverage.failBuild}</failBuild>
+                            <requiredApplicationCoverage>${coverage.requiredCoverage}</requiredApplicationCoverage>
+                            <formats>
+                                <format>${coverage.format.console}</format>
+                                <format>${coverage.format.sonar}</format>
+                                <format>${coverage.format.json}</format>
+                                <format>${coverage.format.html}</format>
+                            </formats>
+                        </coverage>
+                    </configuration>
+                </plugin>
+
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <!-- ============================================= -->
+    <!-- =            REPOSITORIES, etc.              = -->
+    <!-- ============================================= -->
+    <pluginRepositories>
+        <pluginRepository>
+            <id>mulesoft-releases</id>
+            <name>MuleSoft Releases Repository</name>
+            <url>https://repository.mulesoft.org/releases/</url>
+            <layout>${mulesoft-releases.layout}</layout>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <repositories>
+        <repository>
+            <id>anypoint-exchange-v3</id>
+            <name>Anypoint Exchange</name>
+            <url>${anypoint.exchange.v3.url}</url>
+            <layout>${anypoint-exchange-v3.layout}</layout>
+        </repository>
+        <repository>
+            <id>mulesoft-releases</id>
+            <name>MuleSoft Releases Repository</name>
+            <url>https://repository.mulesoft.org/releases/</url>
+            <layout>${mulesoft-releases.layout}</layout>
+        </repository>
+        <!-- Repositório privado -->
+        <repository>
+            <id>${serverId}</id>
+            <name>Private Exchange repository</name>
+            <url>${private.exchange.url}</url>
+            <layout>${private-exchange-repository.layout}</layout>
+        </repository>
+    </repositories>
+
+    <!-- Distribuição (publicação) -->
+    <distributionManagement>
+        <repository>
+            <id>${serverId}</id>
+            <name>Corporate Repository</name>
+            <url>${private.exchange.url}</url>
+            <layout>${corporate-repository.layout}</layout>
+        </repository>
+    </distributionManagement>
+
+</project>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Ajuste groupId/artifactId conforme desejar -->
+    <groupId>37a4147b-4673-4cb6-b589-358074a13f8c</groupId>
+    <artifactId>mule-bom</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <name>mule-bom</name>
+
+    <properties>
+        <assertions.version>1.0.2</assertions.version>
+        <munit.version>3.2.1</munit.version>
+        <http.connector.version>1.10.3</http.connector.version>
+        <sockets.connector.version>1.2.5</sockets.connector.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+
+            <!-- Assertions para DataWeave (test MUnit) -->
+            <dependency>
+                <groupId>org.mule.weave</groupId>
+                <artifactId>assertions</artifactId>
+                <version>${assertions.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- MUnit Tools -->
+            <dependency>
+                <groupId>com.mulesoft.munit</groupId>
+                <artifactId>munit-tools</artifactId>
+                <version>${munit.version}</version>
+                <classifier>mule-plugin</classifier>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- Runner do MUnit -->
+            <dependency>
+                <groupId>com.mulesoft.munit</groupId>
+                <artifactId>munit-runner</artifactId>
+                <version>${munit.version}</version>
+                <classifier>mule-plugin</classifier>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- HTTP Connector -->
+            <dependency>
+                <groupId>org.mule.connectors</groupId>
+                <artifactId>mule-http-connector</artifactId>
+                <version>${http.connector.version}</version>
+                <classifier>mule-plugin</classifier>
+            </dependency>
+
+            <!-- Sockets Connector -->
+            <dependency>
+                <groupId>org.mule.connectors</groupId>
+                <artifactId>mule-sockets-connector</artifactId>
+                <version>${sockets.connector.version}</version>
+                <classifier>mule-plugin</classifier>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+
+</project>

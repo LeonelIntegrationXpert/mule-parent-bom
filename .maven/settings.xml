@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+
+  <!--
+    =============================================================================
+     MuleSoft Settings.xml
+    =============================================================================
+     Projeto   : github-actions
+     Autor     : Leonel Dorneles Porto
+     Email     : leoneldornelesporto@outlook.com.br
+     Telefone  : +55 53 99180-4869
+    =============================================================================
+     Descrição :
+       - Define as credenciais para se conectar ao Anypoint Exchange (via 'servers'),
+         além de perfis (profiles) distintos para ambientes (sandbox, dev, qa, prod).
+       - Cada profile sobrescreve propriedades importantes, como <env>, <region>,
+         <cloudhub.replicas>, etc.
+    =============================================================================
+     Referências:
+       - Perfis do Maven: https://maven.apache.org/settings.html
+       - Mule Maven Plugin: https://docs.mulesoft.com/mule-runtime/latest/mule-maven-plugin
+       - Connected App Scopes: https://help.salesforce.com/s/articleView?id=001119708&type=1
+    =============================================================================
+  -->
+
+  <pluginGroups>
+    <pluginGroup>org.mule.tools</pluginGroup>
+  </pluginGroups>
+
+  <servers>
+    <!-- connected app's required scopes: https://help.salesforce.com/s/articleView?id=001119708&type=1 -->
+    <server>
+      <id>Repository</id>
+      <!-- Deve coincidir com o <serverId> configurado no pom.xml -->
+      <username>~~~Client~~~</username>
+      <!-- Usamos uma concatenação de client.id e client.secret, no formato `id~?~secret` -->
+      <password>${client.id}~?~${client.secret}</password>
+    </server>
+  </servers>
+
+  <!--
+    Definição de perfis (profiles) para ambientes diferentes.
+    Cada profile pode sobrescrever propriedades usadas pelo Maven (ex.: <env>, <region> etc.).
+  -->
+  <profiles>
+
+    <!-- ============================================ -->
+    <!-- Profile 1: sandbox                          -->
+    <!-- ============================================ -->
+    <profile>
+      <id>Sandbox</id>
+      <properties>
+        <!-- Propriedades específicas do ambiente Sandbox -->
+        <env>Sandbox</env>
+        <region>Cloudhub-US-East-2</region>
+        <cloudhub.vcores>0.1</cloudhub.vcores>
+        <cloudhub.replicas>1</cloudhub.replicas>
+        <releaseChannel>LTS</releaseChannel>
+        <app.runtime>4.6.14</app.runtime>
+	<java.version>8</java.version>
+      </properties>
+    </profile>
+
+    <!-- ============================================ -->
+    <!-- Profile 2: dev                              -->
+    <!-- ============================================ -->
+    <profile>
+      <id>dev</id>
+      <properties>
+        <!-- Propriedades específicas do ambiente dev -->
+        <env>dev</env>
+        <region>Cloudhub-US-East-2</region>
+        <cloudhub.vcores>0.1</cloudhub.vcores>
+        <cloudhub.replicas>1</cloudhub.replicas>
+        <releaseChannel>EDGE</releaseChannel>
+        <app.runtime>4.9.2</app.runtime>
+	<java.version>17</java.version>
+      </properties>
+    </profile>
+
+    <!-- ============================================ -->
+    <!-- Profile 3: qa                               -->
+    <!-- ============================================ -->
+    <profile>
+      <id>qa</id>
+      <properties>
+        <!-- Propriedades específicas do ambiente qa -->
+        <env>qa</env>
+        <region>Cloudhub-US-East-2</region>
+        <cloudhub.vcores>0.1</cloudhub.vcores>
+        <cloudhub.replicas>1</cloudhub.replicas>
+        <releaseChannel>EDGE</releaseChannel>
+        <app.runtime>4.9.2</app.runtime>
+	<java.version>17</java.version>
+      </properties>
+    </profile>
+
+    <!-- ============================================ -->
+    <!-- Profile 4: prod                             -->
+    <!-- ============================================ -->
+    <profile>
+      <id>prod</id>
+      <properties>
+        <!-- Propriedades específicas do ambiente prod -->
+        <env>prod</env>
+        <region>Cloudhub-US-East-2</region>
+        <cloudhub.vcores>0.1</cloudhub.vcores>
+        <cloudhub.replicas>1</cloudhub.replicas>
+        <releaseChannel>EDGE</releaseChannel>
+        <app.runtime>4.9.2</app.runtime>
+	<java.version>17</java.version>
+      </properties>
+    </profile>
+
+  </profiles>
+
+  <activeProfiles>
+    <!-- Ativa automaticamente o profile dev (padrão minúsculo) -->
+    <activeProfile>dev</activeProfile>
+  </activeProfiles>
+
+</settings>
