@@ -8,7 +8,7 @@
 #################################################################################################
 # Descrição :
 #   - Publica o Parent POM e BOM no Anypoint Exchange
-#   - NÃO realiza deploy em CloudHub 2.0 (somente publish to Exchange)
+#   - NÃO realiza deploy no CloudHub 2.0 (somente Exchange)
 #################################################################################################
 
 name: 🚀 Publish to Anypoint Exchange
@@ -32,40 +32,23 @@ jobs:
       #########################################################################
       # 1. Checkout do repositório
       #########################################################################
-      - name: 📥 Checkout do repositório completo
+      - name: 📥 Checkout do repositório
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       #########################################################################
-      # 2. Setup JDK 8
+      # 2. Setup JDK 8 + Maven + Cache Maven Dependencies
       #########################################################################
-      - name: ☕ Setup JDK 8 (Zulu)
+      - name: ☕ Setup JDK 8 (Zulu) com cache Maven
         uses: actions/setup-java@v4
         with:
           distribution: "zulu"
           java-version: 8
+          cache: maven
 
       #########################################################################
-      # 3. Setup Maven
-      #########################################################################
-      - name: 🔧 Setup Maven 3.8.8
-        uses: apache/maven-gh-actions-setup@v1
-        with:
-          maven-version: 3.8.8
-
-      #########################################################################
-      # 4. Cache Maven dependencies
-      #########################################################################
-      - name: 📦 Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
-
-      #########################################################################
-      # 5. Incremento de Versão BOM + Parent POM (SemVer simplificado)
+      # 3. Incremento de Versão BOM + Parent POM (SemVer simplificado)
       #########################################################################
       - name: 🔖 Incrementar Versão BOM + Parent POM
         run: |
@@ -81,7 +64,7 @@ jobs:
               return 1
             fi
 
-            local BASE_VERSION=$(grep -m 1 '<version>' "$pom_file" | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+            local BASE_VERSION=$(grep -m 1 '<version>' "$pom_file" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
             echo "📌 Versão atual ($pom_file): $BASE_VERSION"
 
             IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
@@ -107,7 +90,6 @@ jobs:
             git config user.email "github-actions@github.com"
             git add "$pom_file"
             git commit -m "🔖 Bump $pom_file version to $NEW_VERSION [CI/CD auto]"
-            git push origin $GITHUB_REF_NAME
           }
 
           # Incrementa BOM
@@ -116,8 +98,11 @@ jobs:
           # Incrementa Parent POM
           increment_version "parent-pom/pom.xml"
 
+          # Push para branch atual
+          git push origin $GITHUB_REF_NAME
+
       #########################################################################
-      # 6. Publicar BOM no Anypoint Exchange
+      # 4. Publicar BOM no Anypoint Exchange
       #########################################################################
       - name: 📦 Publicar BOM no Exchange
         run: |
@@ -133,7 +118,7 @@ jobs:
         continue-on-error: false
 
       #########################################################################
-      # 7. Publicar Parent POM no Anypoint Exchange
+      # 5. Publicar Parent POM no Anypoint Exchange
       #########################################################################
       - name: 📦 Publicar Parent POM no Exchange
         run: |
@@ -149,7 +134,7 @@ jobs:
         continue-on-error: false
 
       #########################################################################
-      # 8. Upload Maven logs se falhar
+      # 6. Upload Maven logs se falhar
       #########################################################################
       - name: 📤 Upload Maven logs (apenas se falhar)
         if: failure()
