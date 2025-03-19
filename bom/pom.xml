@@ -40,7 +40,7 @@
     -->
     <groupId>37a4147b-4673-4cb6-b589-358074a13f8c</groupId>
     <artifactId>common-bom</artifactId>
-    <version>..1</version>
+    <version>..2</version>
     <packaging>pom</packaging>
 
     <name>common-bom</name>
