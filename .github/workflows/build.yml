@@ -37,9 +37,9 @@ jobs:
           fetch-depth: 0
 
       #########################################################################
-      # 2. Setup JDK 8 + Maven + Cache Maven Dependencies
+      # 2. Setup JDK 8 (Zulu) + Maven Cache
       #########################################################################
-      - name: ☕ Setup JDK 8 (Zulu) com cache Maven
+      - name: ☕ Setup JDK 8 com cache Maven
         uses: actions/setup-java@v4
         with:
           distribution: "zulu"
@@ -47,21 +47,21 @@ jobs:
           cache: maven
 
       #########################################################################
-      # 3. Atualiza a branch local antes do bump
+      # 3. Atualiza a branch antes do bump de versão
       #########################################################################
-      - name: 🔄 Atualiza a branch antes de incrementar a versão
+      - name: 🔄 Atualiza a branch local antes do incremento de versão
         run: |
           git fetch origin
           git checkout $GITHUB_REF_NAME
           git pull origin $GITHUB_REF_NAME --rebase
 
       #########################################################################
-      # 4. Incremento de Versão BOM + Parent POM (SemVer simplificado)
+      # 4. Incremento de Versão BOM + Parent POM (com atualização da referência)
       #########################################################################
       - name: 🔖 Incrementar Versão BOM + Parent POM
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🔖 Incrementando versões do BOM e do Parent POM"
+          echo "🔖 Incrementando versões BOM e Parent POM com SemVer simplificado"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           increment_version_number() {
@@ -83,53 +83,51 @@ jobs:
             echo "${MAJOR}.${MINOR}.${PATCH}"
           }
 
-          #########################################################################
+          #####################################################################
           # Incrementa BOM
-          #########################################################################
-          echo "📦 Incrementando BOM"
+          #####################################################################
           BOM_POM="bom/pom.xml"
           BOM_CURRENT_VERSION=$(grep -m 1 '<version>' "$BOM_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
           BOM_NEW_VERSION=$(increment_version_number "$BOM_CURRENT_VERSION")
-          echo "🚀 Nova versão BOM: $BOM_NEW_VERSION"
+          echo "📦 Nova versão BOM: $BOM_NEW_VERSION"
 
-          # Atualiza <version> no BOM
+          # Atualiza <version> no BOM (primeira ocorrência)
           sed -i "0,/<version>.*<\/version>/s//<version>${BOM_NEW_VERSION}<\/version>/" "$BOM_POM"
 
-          #########################################################################
-          # Incrementa Parent POM e atualiza referência ao BOM
-          #########################################################################
-          echo "📦 Incrementando Parent POM (com BOM $BOM_NEW_VERSION)"
+          #####################################################################
+          # Incrementa Parent POM + Atualiza a referência do BOM nele
+          #####################################################################
           PARENT_POM="parent-pom/pom.xml"
-
           PARENT_CURRENT_VERSION=$(grep -m 1 '<version>' "$PARENT_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
           PARENT_NEW_VERSION=$(increment_version_number "$PARENT_CURRENT_VERSION")
-          echo "🚀 Nova versão Parent POM: $PARENT_NEW_VERSION"
+          echo "📦 Nova versão Parent POM: $PARENT_NEW_VERSION"
 
-          # Atualiza a <version> do próprio Parent POM
+          # Atualiza <version> do próprio Parent POM (primeira fora do <parent>)
           sed -i "0,/<version>.*<\/version>/s//<version>${PARENT_NEW_VERSION}<\/version>/" "$PARENT_POM"
 
-          # Atualiza a versão do BOM na tag <parent> do parent-pom.xml
-          sed -i "0,/<parent>/{N;N;s/<version>.*<\/version>/<version>${BOM_NEW_VERSION}<\/version>/;}" "$PARENT_POM"
+          # Atualiza versão do BOM dentro da <parent> tag
+          sed -i "/<parent>/,/<\/parent>/ s/<version>.*<\/version>/<version>${BOM_NEW_VERSION}<\/version>/" "$PARENT_POM"
 
-          #########################################################################
-          # Commita as alterações
-          #########################################################################
+          #####################################################################
+          # Git commit e push
+          #####################################################################
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add "$BOM_POM" "$PARENT_POM"
           git commit -m "🔖 Bump BOM to ${BOM_NEW_VERSION} and Parent POM to ${PARENT_NEW_VERSION} [CI/CD auto]"
 
-          #########################################################################
-          # Push das alterações
-          #########################################################################
+          echo "🚀 Fazendo push das versões atualizadas..."
           git pull origin $GITHUB_REF_NAME --rebase
           git push origin $GITHUB_REF_NAME
 
       #########################################################################
-      # 5. Publicar BOM no Anypoint Exchange
+      # 5. Publica BOM no Anypoint Exchange
       #########################################################################
       - name: 📦 Publicar BOM no Exchange
         run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📦 Publicando BOM no Anypoint Exchange"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           cd bom
           mvn clean deploy --settings ../.maven/settings.xml \
             -DskipTests \
@@ -138,10 +136,13 @@ jobs:
         timeout-minutes: 10
 
       #########################################################################
-      # 6. Publicar Parent POM no Anypoint Exchange
+      # 6. Publica Parent POM no Anypoint Exchange
       #########################################################################
       - name: 📦 Publicar Parent POM no Exchange
         run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚀 Publicando Parent POM no Anypoint Exchange"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           cd parent-pom
           mvn clean deploy --settings ../.maven/settings.xml \
             -DskipTests \
