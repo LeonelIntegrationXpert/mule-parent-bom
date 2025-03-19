@@ -97,10 +97,10 @@ jobs:
 
           # Atualiza <version> diretamente no <project> do BOM
           xmllint --shell "$BOM_POM" <<EOF
-cd /project/version
-set $BOM_NEW_VERSION
-save
-EOF
+          cd /project/version
+          set $BOM_NEW_VERSION
+          save
+          EOF
 
           #####################################################################
           # 2️⃣ Incrementa Parent POM e referencia o BOM
@@ -116,17 +116,17 @@ EOF
 
           # Atualiza a <version> diretamente no <project> do Parent POM
           xmllint --shell "$PARENT_POM" <<EOF
-cd /project/version
-set $PARENT_NEW_VERSION
-save
-EOF
+          cd /project/version
+          set $PARENT_NEW_VERSION
+          save
+          EOF
 
           # Atualiza a <version> dentro do <parent> tag (referência ao BOM)
           xmllint --shell "$PARENT_POM" <<EOF
-cd /project/parent/version
-set $BOM_NEW_VERSION
-save
-EOF
+          cd /project/parent/version
+          set $BOM_NEW_VERSION
+          save
+          EOF
 
           #####################################################################
           # 3️⃣ Commita e envia alterações
