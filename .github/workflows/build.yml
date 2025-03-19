@@ -46,43 +46,52 @@ jobs:
           git checkout $GITHUB_REF_NAME
           git pull origin $GITHUB_REF_NAME --rebase
 
-      - name: 🛠️ Instala dependências XML
-        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
-
-      - name: 🔖 Incrementar versão do BOM (1º Commit)
+      - name: 🔖 Commit 1: Incrementar versão do BOM e atualizar referência no Parent
         run: |
-          BOM_POM="bom/pom.xml"
-          BOM_CURRENT_VERSION=$(xmllint --xpath "string(/project/version)" "$BOM_POM")
+          increment_version_number() {
+            local base_version="$1"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$base_version"
+            PATCH=$((PATCH + 1))
+            [[ "$PATCH" -gt 99 ]] && { PATCH=0; MINOR=$((MINOR + 1)); }
+            [[ "$MINOR" -gt 99 ]] && { MINOR=0; MAJOR=$((MAJOR + 1)); }
+            echo "${MAJOR}.${MINOR}.${PATCH}"
+          }
 
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$BOM_CURRENT_VERSION"
-          PATCH=$((PATCH + 1))
-          BOM_NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          BOM_POM="bom/pom.xml"
+          BOM_CURRENT_VERSION=$(grep -m 1 '<version>' "$BOM_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+          BOM_NEW_VERSION=$(increment_version_number "$BOM_CURRENT_VERSION")
 
           sed -i "0,/<version>.*<\/version>/s//<version>${BOM_NEW_VERSION}<\/version>/" "$BOM_POM"
 
-          # Atualiza versão do BOM na referência do Parent
           PARENT_POM="parent-pom/pom.xml"
           sed -i "/<parent>/,/<\/parent>/ s/<version>.*<\/version>/<version>${BOM_NEW_VERSION}<\/version>/" "$PARENT_POM"
 
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add "$BOM_POM" "$PARENT_POM"
-          git commit -m "🔖 Bump BOM version to ${BOM_NEW_VERSION} [CI/CD auto]"
+          git commit -m "🔖 Bump BOM version to ${BOM_NEW_VERSION} and update reference in Parent POM [CI/CD auto]"
+          git pull origin $GITHUB_REF_NAME --rebase
+          git push origin $GITHUB_REF_NAME
 
-      - name: 🔖 Incrementar versão do Parent POM (2º Commit)
+      - name: 🔖 Commit 2: Incrementar versão do Parent POM
         run: |
-          PARENT_POM="parent-pom/pom.xml"
-          PARENT_CURRENT_VERSION=$(xmllint --xpath "string(/project/version)" "$PARENT_POM")
+          increment_version_number() {
+            local base_version="$1"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$base_version"
+            PATCH=$((PATCH + 1))
+            [[ "$PATCH" -gt 99 ]] && { PATCH=0; MINOR=$((MINOR + 1)); }
+            [[ "$MINOR" -gt 99 ]] && { MINOR=0; MAJOR=$((MAJOR + 1)); }
+            echo "${MAJOR}.${MINOR}.${PATCH}"
+          }
 
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$PARENT_CURRENT_VERSION"
-          PATCH=$((PATCH + 1))
-          PARENT_NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          PARENT_POM="parent-pom/pom.xml"
+          PARENT_CURRENT_VERSION=$(grep -m 1 '<version>' "$PARENT_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+          PARENT_NEW_VERSION=$(increment_version_number "$PARENT_CURRENT_VERSION")
 
           sed -i "0,/<version>.*<\/version>/s//<version>${PARENT_NEW_VERSION}<\/version>/" "$PARENT_POM"
 
           git add "$PARENT_POM"
           git commit -m "🔖 Bump Parent POM version to ${PARENT_NEW_VERSION} [CI/CD auto]"
-
           git pull origin $GITHUB_REF_NAME --rebase
           git push origin $GITHUB_REF_NAME
 
@@ -93,7 +102,6 @@ jobs:
             -DskipTests \
             -Dclient.id="${{ secrets.CONNECTED_APP_CLIENT_ID }}" \
             -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
-        timeout-minutes: 10
 
       - name: 📦 Publicar Parent POM no Exchange
         run: |
@@ -102,7 +110,6 @@ jobs:
             -DskipTests \
             -Dclient.id="${{ secrets.CONNECTED_APP_CLIENT_ID }}" \
             -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
-        timeout-minutes: 10
 
       - name: 📤 Upload Maven logs (se falhar)
         if: failure()
