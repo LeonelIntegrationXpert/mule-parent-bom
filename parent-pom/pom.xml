@@ -108,7 +108,7 @@
         <!-- (10) URLS / Repositórios -->
         <anypoint.platform.url>https://anypoint.mulesoft.com</anypoint.platform.url>
         <base.maven.anypoint.url>https://maven.anypoint.mulesoft.com/api/v2</base.maven.anypoint.url>
-        <anypoint.exchange.v3.url>${base.maven.anypoint.url}/maven</anypoint.exchange.v3.url>
+        <anypoint.exchange.v2.url>${base.maven.anypoint.url}/maven</anypoint.exchange.v2.url>
         <private.exchange.url>${base.maven.anypoint.url}/organizations/${project.groupId}/maven</private.exchange.url>
     </properties>
 
