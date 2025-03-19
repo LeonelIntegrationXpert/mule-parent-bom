@@ -15,7 +15,7 @@ name: 🚀 Publish to Anypoint Exchange
 
 on:
   push:
-    branches: 
+    branches:
       - dev
       - qa
       - prod
@@ -48,17 +48,17 @@ jobs:
           cache: maven
 
       #########################################################################
-      # 3. Atualiza Branch antes de Bump Version
+      # 3. Atualiza a branch local antes do bump
       #########################################################################
-      - name: 🔄 Atualiza branch antes de incrementar versão
+      - name: 🔄 Sincroniza a branch com a origem antes de incrementar a versão
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🔄 Atualizando branch antes de Bump Version"
+          echo "🔄 Atualizando branch para garantir sync com origem"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          git fetch origin $GITHUB_REF_NAME
+          git fetch origin
           git checkout $GITHUB_REF_NAME
-          git pull --rebase origin $GITHUB_REF_NAME
+          git pull origin $GITHUB_REF_NAME --rebase
 
       #########################################################################
       # 4. Incremento de Versão BOM + Parent POM (SemVer simplificado)
@@ -71,24 +71,28 @@ jobs:
 
           increment_version() {
             local pom_file="$1"
+            local bom_version="$2"
 
             if [ ! -f "$pom_file" ]; then
               echo "❌ $pom_file não encontrado."
               return 1
             fi
 
+            # Versão atual
             local BASE_VERSION=$(grep -m 1 '<version>' "$pom_file" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
             echo "📌 Versão atual ($pom_file): $BASE_VERSION"
 
+            # Incrementa PATCH
             IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
-
             PATCH=$((PATCH + 1))
 
+            # Overflow PATCH > 99
             if [ "$PATCH" -gt 99 ]; then
               PATCH=0
               MINOR=$((MINOR + 1))
             fi
 
+            # Overflow MINOR > 99
             if [ "$MINOR" -gt 99 ]; then
               MINOR=0
               MAJOR=$((MAJOR + 1))
@@ -97,21 +101,34 @@ jobs:
             NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
             echo "🚀 Nova versão para $pom_file: $NEW_VERSION"
 
+            # Atualiza a <version> do próprio POM
             sed -i "0,/<version>.*<\/version>/s//<version>${NEW_VERSION}<\/version>/" "$pom_file"
 
+            # Se for o parent-pom, atualiza a dependência do BOM nele
+            if [[ "$pom_file" == *"parent-pom/pom.xml"* ]]; then
+              echo "🔗 Atualizando referência ao common-bom (${bom_version}) no parent-pom"
+              sed -i "0,/<parent>/{N;s/<version>.*<\/version>/<version>${bom_version}<\/version>/;}" "$pom_file"
+            fi
+
+            # Commita alterações
             git config user.name "github-actions"
             git config user.email "github-actions@github.com"
             git add "$pom_file"
-            git commit -m "🔖 Bump $pom_file version to $NEW_VERSION [CI/CD auto]"
+            git commit -m "🔖 Bump version to $NEW_VERSION in $pom_file [CI/CD auto]"
           }
 
-          # Incrementa BOM
+          #### Incrementa BOM e guarda nova versão para usar no Parent POM
+          echo "📦 Incrementando BOM..."
           increment_version "bom/pom.xml"
+          NEW_BOM_VERSION=$(grep -m 1 '<version>' bom/pom.xml | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
 
-          # Incrementa Parent POM
-          increment_version "parent-pom/pom.xml"
+          #### Incrementa o Parent POM e aponta para o BOM correto
+          echo "📦 Incrementando Parent POM (com BOM $NEW_BOM_VERSION)..."
+          increment_version "parent-pom/pom.xml" "$NEW_BOM_VERSION"
 
-          # Push para branch atual (já atualizado)
+          #### Push das alterações para a branch atual
+          echo "🚀 Realizando push das versões atualizadas..."
+          git pull origin $GITHUB_REF_NAME --rebase
           git push origin $GITHUB_REF_NAME
 
       #########################################################################
