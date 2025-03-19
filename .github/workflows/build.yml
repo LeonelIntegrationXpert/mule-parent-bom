@@ -8,7 +8,6 @@
 #################################################################################################
 # Descrição :
 #   - Publica o Parent POM e BOM no Anypoint Exchange
-#   - NÃO realiza deploy no CloudHub 2.0 (somente Exchange)
 #################################################################################################
 
 name: 🚀 Publish to Anypoint Exchange
@@ -50,12 +49,8 @@ jobs:
       #########################################################################
       # 3. Atualiza a branch local antes do bump
       #########################################################################
-      - name: 🔄 Sincroniza a branch com a origem antes de incrementar a versão
+      - name: 🔄 Atualiza a branch antes de incrementar a versão
         run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🔄 Atualizando branch para garantir sync com origem"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
           git fetch origin
           git checkout $GITHUB_REF_NAME
           git pull origin $GITHUB_REF_NAME --rebase
@@ -66,10 +61,9 @@ jobs:
       - name: 🔖 Incrementar Versão BOM + Parent POM
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🔖 Iniciando incremento de versão (BOM e Parent POM)"
+          echo "🔖 Incrementando versões do BOM e do Parent POM"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Função para incrementar versões no estilo MAJOR.MINOR.PATCH
           increment_version_number() {
             local base_version="$1"
 
@@ -92,7 +86,7 @@ jobs:
           #########################################################################
           # Incrementa BOM
           #########################################################################
-          echo "📦 Incrementando BOM..."
+          echo "📦 Incrementando BOM"
           BOM_POM="bom/pom.xml"
           BOM_CURRENT_VERSION=$(grep -m 1 '<version>' "$BOM_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
           BOM_NEW_VERSION=$(increment_version_number "$BOM_CURRENT_VERSION")
@@ -104,20 +98,21 @@ jobs:
           #########################################################################
           # Incrementa Parent POM e atualiza referência ao BOM
           #########################################################################
-          echo "📦 Incrementando Parent POM (com BOM $BOM_NEW_VERSION)..."
+          echo "📦 Incrementando Parent POM (com BOM $BOM_NEW_VERSION)"
           PARENT_POM="parent-pom/pom.xml"
+
           PARENT_CURRENT_VERSION=$(grep -m 1 '<version>' "$PARENT_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
           PARENT_NEW_VERSION=$(increment_version_number "$PARENT_CURRENT_VERSION")
           echo "🚀 Nova versão Parent POM: $PARENT_NEW_VERSION"
 
-          # Atualiza <version> no próprio Parent POM
+          # Atualiza a <version> do próprio Parent POM
           sed -i "0,/<version>.*<\/version>/s//<version>${PARENT_NEW_VERSION}<\/version>/" "$PARENT_POM"
 
-          # Atualiza referência ao BOM no <parent>
+          # Atualiza a versão do BOM na tag <parent> do parent-pom.xml
           sed -i "0,/<parent>/{N;N;s/<version>.*<\/version>/<version>${BOM_NEW_VERSION}<\/version>/;}" "$PARENT_POM"
 
           #########################################################################
-          # Git Commit das alterações
+          # Commita as alterações
           #########################################################################
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
@@ -125,9 +120,8 @@ jobs:
           git commit -m "🔖 Bump BOM to ${BOM_NEW_VERSION} and Parent POM to ${PARENT_NEW_VERSION} [CI/CD auto]"
 
           #########################################################################
-          # Push das alterações para a branch atual
+          # Push das alterações
           #########################################################################
-          echo "🚀 Realizando push das versões atualizadas..."
           git pull origin $GITHUB_REF_NAME --rebase
           git push origin $GITHUB_REF_NAME
 
@@ -136,32 +130,24 @@ jobs:
       #########################################################################
       - name: 📦 Publicar BOM no Exchange
         run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "📦 Publicando BOM no Anypoint Exchange"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           cd bom
           mvn clean deploy --settings ../.maven/settings.xml \
             -DskipTests \
             -Dclient.id="${{ secrets.CONNECTED_APP_CLIENT_ID }}" \
             -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
         timeout-minutes: 10
-        continue-on-error: false
 
       #########################################################################
       # 6. Publicar Parent POM no Anypoint Exchange
       #########################################################################
       - name: 📦 Publicar Parent POM no Exchange
         run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🚀 Publicando Parent POM no Anypoint Exchange"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           cd parent-pom
           mvn clean deploy --settings ../.maven/settings.xml \
             -DskipTests \
             -Dclient.id="${{ secrets.CONNECTED_APP_CLIENT_ID }}" \
             -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
         timeout-minutes: 10
-        continue-on-error: false
 
       #########################################################################
       # 7. Upload Maven logs se falhar
