@@ -28,11 +28,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      #########################################################################
+      # 1. Checkout do repositório
+      #########################################################################
       - name: 📥 Checkout do repositório
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      #########################################################################
+      # 2. Setup JDK 8 (Zulu) + Maven Cache
+      #########################################################################
       - name: ☕ Setup JDK 8 com cache Maven
         uses: actions/setup-java@v4
         with:
@@ -40,45 +46,80 @@ jobs:
           java-version: "8"
           cache: maven
 
+      #########################################################################
+      # 3. Atualiza a branch local antes de qualquer commit
+      #########################################################################
       - name: 🔄 Atualiza a branch local
         run: |
           git fetch origin
           git checkout $GITHUB_REF_NAME
           git pull origin $GITHUB_REF_NAME --rebase
 
-      - name: 🔖 Incrementar versão do BOM (1º Commit)
-        run: |
-          BOM_POM="bom/pom.xml"
-          BOM_CURRENT_VERSION=$(grep -m 1 '<version>' "$BOM_POM" | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
-
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$BOM_CURRENT_VERSION"
-          PATCH=$((PATCH + 1))
-          BOM_NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-
-          sed -i "0,/<version>.*<\/version>/s//<version>${BOM_NEW_VERSION}<\/version>/" "$BOM_POM"
-
-          echo "BOM_NEW_VERSION=${BOM_NEW_VERSION}" >> $GITHUB_ENV
-
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add "$BOM_POM"
-          git commit -m "🔖 Bump BOM version to ${BOM_NEW_VERSION} [CI/CD auto]"
-
-      - name: 🔖 Incrementar versão do Parent POM (2º Commit)
+      #########################################################################
+      # 4. Commit 1: Incrementar versão <project><version> do Parent POM
+      #########################################################################
+      - name: 🔖 Commit 1 - Incrementa Parent POM (project.version)
         run: |
           PARENT_POM="parent-pom/pom.xml"
 
-          sed -i "0,/<version>.*<\/version>/s//<version>${{ env.BOM_NEW_VERSION }}<\/version>/" "$PARENT_POM"
+          # Extrai a versão atual do POM (primeira <version> fora do <parent>)
+          PARENT_CURRENT_VERSION=$(sed -n '/<parent>/,/<\\/parent>/ !{/version/{s/.*<version>\\(.*\\)<\\/version>.*/\\1/p;q}}' "$PARENT_POM")
+          if [ -z "$PARENT_CURRENT_VERSION" ]; then
+            echo "❌ Não achou <project><version> fora do <parent> block no parent-pom.xml"
+            exit 1
+          fi
+          echo "Versão atual do Parent POM (project.version): $PARENT_CURRENT_VERSION"
 
-          # Atualiza versão do BOM dentro da tag <parent>
-          sed -i "/<parent>/,/<\/parent>/ s/<version>.*<\/version>/<version>${{ env.BOM_NEW_VERSION }}<\/version>/" "$PARENT_POM"
+          # Incremento simples sem Overflow grande
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$PARENT_CURRENT_VERSION"
+          PATCH=$((PATCH + 1))
+          PARENT_NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 
+          echo "🚀 Nova versão do Parent POM: $PARENT_NEW_VERSION"
+
+          # Usa sed para ignorar <parent> block e atualizar a primeira <version> fora dele
+          sed -i '/<parent>/,/<\\/parent>/! {0,/<version>.*<\\/version>/ s//<version>'"$PARENT_NEW_VERSION"'<\\/version>/}' "$PARENT_POM"
+
+          echo "PARENT_NEW_VERSION=${PARENT_NEW_VERSION}" >> $GITHUB_ENV
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
           git add "$PARENT_POM"
-          git commit -m "🔖 Sync Parent POM and BOM to version ${{ env.BOM_NEW_VERSION }} [CI/CD auto]"
+          git commit -m "🔖 Bump Parent POM (project.version) to ${PARENT_NEW_VERSION} [CI/CD auto]"
+
+      #########################################################################
+      # 5. Commit 2: Sincronizar BOM + Referência no Parent
+      #########################################################################
+      - name: 🔖 Commit 2 - Incrementa BOM e atualiza <parent> no Parent
+        run: |
+          # 1) Incrementa BOM
+          BOM_POM="bom/pom.xml"
+          BOM_CURRENT_VERSION=$(grep -m 1 '<version>' "$BOM_POM" | sed -E 's/.*<version>(.*)<\\/version>.*/\\1/')
+          IFS='.' read -r BMAJ BMIN BPAT <<< "$BOM_CURRENT_VERSION"
+          BPAT=$((BPAT + 1))
+          BOM_NEW_VERSION="${BMAJ}.${BMIN}.${BPAT}"
+
+          sed -i "0,/<version>.*<\\/version>/s//<version>${BOM_NEW_VERSION}<\\/version>/" "$BOM_POM"
+
+          # 2) Ajusta no Parent POM (no <parent> block) para BOM_NEW_VERSION
+          source $GITHUB_ENV  # PARENT_NEW_VERSION lido aqui
+
+          PARENT_POM="parent-pom/pom.xml"
+          sed -i "/<parent>/,/<\\/parent>/ s/<version>.*<\\/version>/<version>${BOM_NEW_VERSION}<\\/version>/" "$PARENT_POM"
+
+          echo "Commit final: BOM=$BOM_NEW_VERSION / Parent=$PARENT_NEW_VERSION"
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add "$BOM_POM" "$PARENT_POM"
+          git commit -m \"🔖 Bump BOM to ${BOM_NEW_VERSION}, sync <parent> in Parent POM, keep project.version=${PARENT_NEW_VERSION} [CI/CD auto]\"
 
           git pull origin $GITHUB_REF_NAME --rebase
           git push origin $GITHUB_REF_NAME
 
+      #########################################################################
+      # 6. Publicar BOM no Exchange
+      #########################################################################
       - name: 📦 Publicar BOM no Exchange
         run: |
           cd bom
@@ -88,6 +129,9 @@ jobs:
             -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
         timeout-minutes: 10
 
+      #########################################################################
+      # 7. Publicar Parent POM no Exchange
+      #########################################################################
       - name: 📦 Publicar Parent POM no Exchange
         run: |
           cd parent-pom
@@ -97,7 +141,10 @@ jobs:
             -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
         timeout-minutes: 10
 
-      - name: 📤 Upload Maven logs (se falhar)
+      #########################################################################
+      # 8. Upload Maven logs (se falhar)
+      #########################################################################
+      - name: 📤 Upload Maven logs (apenas se falhar)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
