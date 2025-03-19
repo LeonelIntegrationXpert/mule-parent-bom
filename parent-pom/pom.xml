@@ -37,7 +37,7 @@
     <parent>
         <groupId>37a4147b-4673-4cb6-b589-358074a13f8c</groupId>
         <artifactId>common-bom</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
 
     <!-- 
