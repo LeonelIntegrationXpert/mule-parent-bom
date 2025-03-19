@@ -1,5 +1,5 @@
 #################################################################################################
-# MuleSoft CI/CD Pipeline - GitHub Actions Workflow
+# 🚀 MuleSoft CI/CD Pipeline - GitHub Actions Workflow
 #################################################################################################
 # Projeto   : mule-parent-bom
 # Autor     : Leonel Dorneles Porto
@@ -7,15 +7,15 @@
 # Telefone  : +55 53 99180-4869
 #################################################################################################
 # Descrição :
-#   ✅ Pipeline de CI/CD para publicar o Parent POM e BOM no Anypoint Exchange.
-#   ❌ Não realiza deploy em CloudHub (somente publicação no Exchange).
+#   - Publica o Parent POM e BOM no Anypoint Exchange
+#   - NÃO realiza deploy em CloudHub 2.0 (somente publish to Exchange)
 #################################################################################################
 
-name: 🚀 Publish Parent POM & BOM to Exchange
+name: 🚀 Publish to Anypoint Exchange
 
 on:
   push:
-    branches:
+    branches: 
       - dev
       - qa
       - prod
@@ -25,29 +25,37 @@ permissions:
   contents: write
 
 jobs:
-  publish-to-exchange:
+  publish-exchange:
     runs-on: ubuntu-latest
 
     steps:
       #########################################################################
-      # 📥 1. Checkout do repositório
+      # 1. Checkout do repositório
       #########################################################################
-      - name: 📥 Checkout do repositório
+      - name: 📥 Checkout do repositório completo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       #########################################################################
-      # ☕ 2. Setup JDK
+      # 2. Setup JDK 8
       #########################################################################
-      - name: ☕ Configurar JDK 8
+      - name: ☕ Setup JDK 8 (Zulu)
         uses: actions/setup-java@v4
         with:
           distribution: "zulu"
           java-version: 8
 
       #########################################################################
-      # 📦 3. Cache de dependências Maven
+      # 3. Setup Maven
+      #########################################################################
+      - name: 🔧 Setup Maven 3.8.8
+        uses: s4u/setup-maven-action@v1
+        with:
+          maven-version: 3.8.8
+
+      #########################################################################
+      # 4. Cache Maven dependencies
       #########################################################################
       - name: 📦 Cache Maven dependencies
         uses: actions/cache@v4
@@ -57,36 +65,95 @@ jobs:
           restore-keys: ${{ runner.os }}-maven-
 
       #########################################################################
-      # 🚀 4. Publicar BOM no Anypoint Exchange (PRIMEIRO!)
+      # 5. Incremento de Versão BOM + Parent POM (SemVer simplificado)
       #########################################################################
-      - name: 🚀 Publicar BOM no Exchange
+      - name: 🔖 Incrementar Versão BOM + Parent POM
         run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔖 Iniciando incremento de versão (BOM e Parent POM)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          increment_version() {
+            local pom_file="$1"
+
+            if [ ! -f "$pom_file" ]; then
+              echo "❌ $pom_file não encontrado."
+              return 1
+            fi
+
+            local BASE_VERSION=$(grep -m 1 '<version>' "$pom_file" | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+            echo "📌 Versão atual ($pom_file): $BASE_VERSION"
+
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
+
+            PATCH=$((PATCH + 1))
+
+            if [ "$PATCH" -gt 99 ]; then
+              PATCH=0
+              MINOR=$((MINOR + 1))
+            fi
+
+            if [ "$MINOR" -gt 99 ]; then
+              MINOR=0
+              MAJOR=$((MAJOR + 1))
+            fi
+
+            NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            echo "🚀 Nova versão para $pom_file: $NEW_VERSION"
+
+            sed -i "0,/<version>.*<\/version>/s//<version>${NEW_VERSION}<\/version>/" "$pom_file"
+
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add "$pom_file"
+            git commit -m "🔖 Bump $pom_file version to $NEW_VERSION [CI/CD auto]"
+            git push origin $GITHUB_REF_NAME
+          }
+
+          # Incrementa BOM
+          increment_version "bom/pom.xml"
+
+          # Incrementa Parent POM
+          increment_version "parent-pom/pom.xml"
+
+      #########################################################################
+      # 6. Publicar BOM no Anypoint Exchange
+      #########################################################################
+      - name: 📦 Publicar BOM no Exchange
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📦 Publicando BOM no Anypoint Exchange"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           cd bom
           mvn clean deploy --settings ../.maven/settings.xml \
             -DskipTests \
             -Dclient.id="${{ secrets.CONNECTED_APP_CLIENT_ID }}" \
             -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
+        timeout-minutes: 10
+        continue-on-error: false
 
       #########################################################################
-      # 🚀 5. Publicar Parent POM no Anypoint Exchange (DEPOIS DO BOM)
+      # 7. Publicar Parent POM no Anypoint Exchange
       #########################################################################
-      - name: 🚀 Publicar Parent POM no Exchange
+      - name: 📦 Publicar Parent POM no Exchange
         run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🌐 Publicando Parent POM no Anypoint Exchange"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚀 Publicando Parent POM no Anypoint Exchange"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           cd parent-pom
           mvn clean deploy --settings ../.maven/settings.xml \
             -DskipTests \
             -Dclient.id="${{ secrets.CONNECTED_APP_CLIENT_ID }}" \
             -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
+        timeout-minutes: 10
+        continue-on-error: false
 
       #########################################################################
-      # ✅ 6. Fim do pipeline
+      # 8. Upload Maven logs se falhar
       #########################################################################
-      - name: ✅ Finalizado
-        run: |
-          echo "🎉 Publicação do BOM e Parent POM concluída com sucesso!"
+      - name: 📤 Upload Maven logs (apenas se falhar)
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: maven-logs
+          path: "**/target/*.log"
