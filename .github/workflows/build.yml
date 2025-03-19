@@ -56,12 +56,18 @@ jobs:
           git pull origin $GITHUB_REF_NAME --rebase
 
       #########################################################################
-      # 4. Incremento de Versão BOM + Parent POM (com atualização da referência)
+      # 4. Instala dependências para manipulação XML (xmllint)
+      #########################################################################
+      - name: 🛠️ Instala dependências XML
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+
+      #########################################################################
+      # 5. Incremento de Versão BOM + Parent POM (com atualização da referência)
       #########################################################################
       - name: 🔖 Incrementar Versão BOM + Parent POM
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🔖 Incrementando versões BOM e Parent POM com SemVer simplificado"
+          echo "🔖 Incrementando versões BOM e Parent POM (explícito)"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           increment_version_number() {
@@ -87,25 +93,34 @@ jobs:
           # Incrementa BOM
           #####################################################################
           BOM_POM="bom/pom.xml"
-          BOM_CURRENT_VERSION=$(grep -m 1 '<version>' "$BOM_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
-          BOM_NEW_VERSION=$(increment_version_number "$BOM_CURRENT_VERSION")
-          echo "📦 Nova versão BOM: $BOM_NEW_VERSION"
+          echo "📦 Incrementando versão do BOM"
 
-          # Atualiza <version> no BOM (primeira ocorrência)
+          BOM_CURRENT_VERSION=$(xmllint --xpath "string(/project/version)" "$BOM_POM")
+          echo "🔎 Versão atual do BOM: $BOM_CURRENT_VERSION"
+
+          BOM_NEW_VERSION=$(increment_version_number "$BOM_CURRENT_VERSION")
+          echo "🚀 Nova versão do BOM: $BOM_NEW_VERSION"
+
+          # Atualiza <project><version> no BOM
           sed -i "0,/<version>.*<\/version>/s//<version>${BOM_NEW_VERSION}<\/version>/" "$BOM_POM"
 
           #####################################################################
-          # Incrementa Parent POM + Atualiza a referência do BOM nele
+          # Incrementa Parent POM + Atualiza a referência do BOM
           #####################################################################
           PARENT_POM="parent-pom/pom.xml"
-          PARENT_CURRENT_VERSION=$(grep -m 1 '<version>' "$PARENT_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
-          PARENT_NEW_VERSION=$(increment_version_number "$PARENT_CURRENT_VERSION")
-          echo "📦 Nova versão Parent POM: $PARENT_NEW_VERSION"
+          echo "📦 Incrementando versão do Parent POM e atualizando referência do BOM"
 
-          # Atualiza <version> do próprio Parent POM (primeira fora do <parent>)
+          # Obtém versão atual de <project><version> do Parent POM
+          PARENT_CURRENT_VERSION=$(xmllint --xpath "string(/project/version)" "$PARENT_POM")
+          echo "🔎 Versão atual do Parent POM: $PARENT_CURRENT_VERSION"
+
+          PARENT_NEW_VERSION=$(increment_version_number "$PARENT_CURRENT_VERSION")
+          echo "🚀 Nova versão do Parent POM: $PARENT_NEW_VERSION"
+
+          # Atualiza <project><version> do Parent POM
           sed -i "0,/<version>.*<\/version>/s//<version>${PARENT_NEW_VERSION}<\/version>/" "$PARENT_POM"
 
-          # Atualiza versão do BOM dentro da <parent> tag
+          # Atualiza a versão do BOM dentro da <parent> do Parent POM
           sed -i "/<parent>/,/<\/parent>/ s/<version>.*<\/version>/<version>${BOM_NEW_VERSION}<\/version>/" "$PARENT_POM"
 
           #####################################################################
@@ -121,7 +136,7 @@ jobs:
           git push origin $GITHUB_REF_NAME
 
       #########################################################################
-      # 5. Publica BOM no Anypoint Exchange
+      # 6. Publica BOM no Anypoint Exchange
       #########################################################################
       - name: 📦 Publicar BOM no Exchange
         run: |
@@ -136,7 +151,7 @@ jobs:
         timeout-minutes: 10
 
       #########################################################################
-      # 6. Publica Parent POM no Anypoint Exchange
+      # 7. Publica Parent POM no Anypoint Exchange
       #########################################################################
       - name: 📦 Publicar Parent POM no Exchange
         run: |
@@ -151,7 +166,7 @@ jobs:
         timeout-minutes: 10
 
       #########################################################################
-      # 7. Upload Maven logs se falhar
+      # 8. Upload Maven logs se falhar
       #########################################################################
       - name: 📤 Upload Maven logs (apenas se falhar)
         if: failure()
