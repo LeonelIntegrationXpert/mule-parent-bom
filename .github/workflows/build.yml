@@ -37,7 +37,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: "zulu"
-          java-version: 8
+          java-version: "8"
           cache: maven
 
       - name: 🔄 Atualiza a branch local
@@ -48,33 +48,33 @@ jobs:
 
       - name: 🔖 Incrementar versão do BOM (1º Commit)
         run: |
-          BOM_POM=\"bom/pom.xml\"
-          BOM_CURRENT_VERSION=$(grep -m 1 '<version>' \"$BOM_POM\" | sed -E 's/.*<version>(.*)<\\/version>.*/\\1/')
+          BOM_POM="bom/pom.xml"
+          BOM_CURRENT_VERSION=$(grep -m 1 '<version>' "$BOM_POM" | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
 
-          IFS='.' read -r MAJOR MINOR PATCH <<< \"$BOM_CURRENT_VERSION\"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$BOM_CURRENT_VERSION"
           PATCH=$((PATCH + 1))
-          BOM_NEW_VERSION=\"${MAJOR}.${MINOR}.${PATCH}\"
+          BOM_NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 
-          sed -i \"0,/<version>.*<\\/version>/s//<version>${BOM_NEW_VERSION}<\\/version>/\" \"$BOM_POM\"
+          sed -i "0,/<version>.*<\/version>/s//<version>${BOM_NEW_VERSION}<\/version>/" "$BOM_POM"
 
-          echo \"BOM_NEW_VERSION=${BOM_NEW_VERSION}\" >> $GITHUB_ENV
+          echo "BOM_NEW_VERSION=${BOM_NEW_VERSION}" >> $GITHUB_ENV
 
-          git config user.name \"github-actions\"
-          git config user.email \"github-actions@github.com\"
-          git add \"$BOM_POM\"
-          git commit -m \"🔖 Bump BOM version to ${BOM_NEW_VERSION} [CI/CD auto]\"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add "$BOM_POM"
+          git commit -m "🔖 Bump BOM version to ${BOM_NEW_VERSION} [CI/CD auto]"
 
       - name: 🔖 Incrementar versão do Parent POM (2º Commit)
         run: |
-          PARENT_POM=\"parent-pom/pom.xml\"
+          PARENT_POM="parent-pom/pom.xml"
 
-          sed -i \"0,/<version>.*<\\/version>/s//<version>${{ env.BOM_NEW_VERSION }}<\\/version>/\" \"$PARENT_POM\"
+          sed -i "0,/<version>.*<\/version>/s//<version>${{ env.BOM_NEW_VERSION }}<\/version>/" "$PARENT_POM"
 
           # Atualiza versão do BOM dentro da tag <parent>
-          sed -i \"/<parent>/,/<\\/parent>/ s/<version>.*<\\/version>/<version>${{ env.BOM_NEW_VERSION }}<\\/version>/\" \"$PARENT_POM\"
+          sed -i "/<parent>/,/<\/parent>/ s/<version>.*<\/version>/<version>${{ env.BOM_NEW_VERSION }}<\/version>/" "$PARENT_POM"
 
-          git add \"$PARENT_POM\"
-          git commit -m \"🔖 Sync Parent POM and BOM to version ${{ env.BOM_NEW_VERSION }} [CI/CD auto]\"
+          git add "$PARENT_POM"
+          git commit -m "🔖 Sync Parent POM and BOM to version ${{ env.BOM_NEW_VERSION }} [CI/CD auto]"
 
           git pull origin $GITHUB_REF_NAME --rebase
           git push origin $GITHUB_REF_NAME
@@ -84,8 +84,8 @@ jobs:
           cd bom
           mvn clean deploy --settings ../.maven/settings.xml \
             -DskipTests \
-            -Dclient.id=\"${{ secrets.CONNECTED_APP_CLIENT_ID }}\" \
-            -Dclient.secret=\"${{ secrets.CONNECTED_APP_CLIENT_SECRET }}\"
+            -Dclient.id="${{ secrets.CONNECTED_APP_CLIENT_ID }}" \
+            -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
         timeout-minutes: 10
 
       - name: 📦 Publicar Parent POM no Exchange
@@ -93,8 +93,8 @@ jobs:
           cd parent-pom
           mvn clean deploy --settings ../.maven/settings.xml \
             -DskipTests \
-            -Dclient.id=\"${{ secrets.CONNECTED_APP_CLIENT_ID }}\" \
-            -Dclient.secret=\"${{ secrets.CONNECTED_APP_CLIENT_SECRET }}\"
+            -Dclient.id="${{ secrets.CONNECTED_APP_CLIENT_ID }}" \
+            -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
         timeout-minutes: 10
 
       - name: 📤 Upload Maven logs (se falhar)
@@ -102,4 +102,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: maven-logs
-          path: \"**/target/*.log\"
+          path: "**/target/*.log"
