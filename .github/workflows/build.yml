@@ -37,9 +37,9 @@ jobs:
           fetch-depth: 0
 
       #########################################################################
-      # 2. Setup JDK 8 (Zulu) + Maven Cache
+      # 2. Setup JDK 8 + Maven + Cache Maven Dependencies
       #########################################################################
-      - name: ☕ Setup JDK 8 com cache Maven
+      - name: ☕ Setup JDK 8 (Zulu) com cache Maven
         uses: actions/setup-java@v4
         with:
           distribution: "zulu"
@@ -49,19 +49,19 @@ jobs:
       #########################################################################
       # 3. Atualiza a branch antes do bump de versão
       #########################################################################
-      - name: 🔄 Atualiza a branch local antes do incremento de versão
+      - name: 🔄 Atualiza a branch antes de incrementar a versão
         run: |
           git fetch origin
           git checkout $GITHUB_REF_NAME
           git pull origin $GITHUB_REF_NAME --rebase
 
       #########################################################################
-      # 4. Incremento de Versão BOM + Parent POM (com atualização da referência)
+      # 4. Incrementa versão BOM e Parent POM (explícito!)
       #########################################################################
-      - name: 🔖 Incrementar Versão BOM + Parent POM
+      - name: 🔖 Incrementar versão BOM + Parent POM
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🔖 Incrementando versões BOM e Parent POM com SemVer simplificado"
+          echo "🔖 Iniciando incremento de versões BOM e Parent POM (explícito)"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           increment_version_number() {
@@ -84,32 +84,52 @@ jobs:
           }
 
           #####################################################################
-          # Incrementa BOM
+          # 1️⃣ Incrementa BOM
           #####################################################################
           BOM_POM="bom/pom.xml"
-          BOM_CURRENT_VERSION=$(grep -m 1 '<version>' "$BOM_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+          echo "📦 Localizando BOM em $BOM_POM"
+          
+          BOM_CURRENT_VERSION=$(xmllint --xpath "string(//project/version)" "$BOM_POM")
+          echo "🔎 Versão atual do BOM: $BOM_CURRENT_VERSION"
+          
           BOM_NEW_VERSION=$(increment_version_number "$BOM_CURRENT_VERSION")
-          echo "📦 Nova versão BOM: $BOM_NEW_VERSION"
+          echo "🚀 Nova versão BOM: $BOM_NEW_VERSION"
 
-          # Atualiza <version> no BOM (primeira ocorrência)
-          sed -i "0,/<version>.*<\/version>/s//<version>${BOM_NEW_VERSION}<\/version>/" "$BOM_POM"
+          # Atualiza <version> diretamente no <project> do BOM
+          xmllint --shell "$BOM_POM" <<EOF
+cd /project/version
+set $BOM_NEW_VERSION
+save
+EOF
 
           #####################################################################
-          # Incrementa Parent POM + Atualiza a referência do BOM nele
+          # 2️⃣ Incrementa Parent POM e referencia o BOM
           #####################################################################
           PARENT_POM="parent-pom/pom.xml"
-          PARENT_CURRENT_VERSION=$(grep -m 1 '<version>' "$PARENT_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+          echo "📦 Localizando Parent POM em $PARENT_POM"
+
+          PARENT_CURRENT_VERSION=$(xmllint --xpath "string(/project/version)" "$PARENT_POM")
+          echo "🔎 Versão atual do Parent POM: $PARENT_CURRENT_VERSION"
+
           PARENT_NEW_VERSION=$(increment_version_number "$PARENT_CURRENT_VERSION")
-          echo "📦 Nova versão Parent POM: $PARENT_NEW_VERSION"
+          echo "🚀 Nova versão Parent POM: $PARENT_NEW_VERSION"
 
-          # Atualiza <version> do próprio Parent POM (primeira fora do <parent>)
-          sed -i "0,/<version>.*<\/version>/s//<version>${PARENT_NEW_VERSION}<\/version>/" "$PARENT_POM"
+          # Atualiza a <version> diretamente no <project> do Parent POM
+          xmllint --shell "$PARENT_POM" <<EOF
+cd /project/version
+set $PARENT_NEW_VERSION
+save
+EOF
 
-          # Atualiza versão do BOM dentro da <parent> tag
-          sed -i "/<parent>/,/<\/parent>/ s/<version>.*<\/version>/<version>${BOM_NEW_VERSION}<\/version>/" "$PARENT_POM"
+          # Atualiza a <version> dentro do <parent> tag (referência ao BOM)
+          xmllint --shell "$PARENT_POM" <<EOF
+cd /project/parent/version
+set $BOM_NEW_VERSION
+save
+EOF
 
           #####################################################################
-          # Git commit e push
+          # 3️⃣ Commita e envia alterações
           #####################################################################
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
