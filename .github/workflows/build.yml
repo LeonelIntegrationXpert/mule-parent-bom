@@ -57,6 +57,8 @@ jobs:
 
           sed -i "0,/<version>.*<\/version>/s//<version>${BOM_NEW_VERSION}<\/version>/" "$BOM_POM"
 
+          echo "BOM_NEW_VERSION=${BOM_NEW_VERSION}" >> $GITHUB_ENV
+
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add "$BOM_POM"
@@ -66,11 +68,11 @@ jobs:
         run: |
           PARENT_POM="parent-pom/pom.xml"
 
-          sed -i "/<parent>/,/<\/parent>/ s/<version>.*<\/version>/<version>${BOM_NEW_VERSION}<\/version>/" "$PARENT_POM"
-          sed -i "0,/<version>.*<\/version>/s//<version>${BOM_NEW_VERSION}<\/version>/" "$PARENT_POM"
+          sed -i "/<parent>/,/<\/parent>/ s/<version>.*<\/version>/<version>${{ env.BOM_NEW_VERSION }}<\/version>/" "$PARENT_POM"
+          sed -i "0,/<version>.*<\/version>/s//<version>${{ env.BOM_NEW_VERSION }}<\/version>/" "$PARENT_POM"
 
           git add "$PARENT_POM"
-          git commit -m "🔖 Sync Parent POM version with BOM to ${BOM_NEW_VERSION} [CI/CD auto]"
+          git commit -m "🔖 Sync Parent POM version with BOM to ${{ env.BOM_NEW_VERSION }} [CI/CD auto]"
 
           git pull origin $GITHUB_REF_NAME --rebase
           git push origin $GITHUB_REF_NAME
