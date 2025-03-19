@@ -64,15 +64,22 @@ jobs:
           git add "$BOM_POM"
           git commit -m "🔖 Bump BOM version to ${BOM_NEW_VERSION} [CI/CD auto]"
 
-      - name: 🔖 Atualizar Parent POM para a versão do BOM (2º Commit)
+      - name: 🔖 Incrementar versão do Parent POM (2º Commit)
         run: |
           PARENT_POM="parent-pom/pom.xml"
+          PARENT_CURRENT_VERSION=$(grep -m 1 '<version>' "$PARENT_POM" | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
 
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$PARENT_CURRENT_VERSION"
+          PATCH=$((PATCH + 1))
+          PARENT_NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+
+          sed -i "0,/<version>.*<\/version>/s//<version>${PARENT_NEW_VERSION}<\/version>/" "$PARENT_POM"
+
+          # Atualiza versão do BOM dentro da tag <parent>
           sed -i "/<parent>/,/<\/parent>/ s/<version>.*<\/version>/<version>${{ env.BOM_NEW_VERSION }}<\/version>/" "$PARENT_POM"
-          sed -i "0,/<version>.*<\/version>/s//<version>${{ env.BOM_NEW_VERSION }}<\/version>/" "$PARENT_POM"
 
           git add "$PARENT_POM"
-          git commit -m "🔖 Sync Parent POM version with BOM to ${{ env.BOM_NEW_VERSION }} [CI/CD auto]"
+          git commit -m "🔖 Bump Parent POM to ${PARENT_NEW_VERSION} and sync BOM to ${{ env.BOM_NEW_VERSION }} [CI/CD auto]"
 
           git pull origin $GITHUB_REF_NAME --rebase
           git push origin $GITHUB_REF_NAME
