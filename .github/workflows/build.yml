@@ -64,7 +64,7 @@ jobs:
           echo "📦 Publicando BOM no Anypoint Exchange (sem incremento)"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           cd bom
-          mvn clean deploy --settings ../.maven/settings.xml \
+          mvn deploy --settings ../.maven/settings.xml \
             -DskipTests \
             -Dclient.id="${{ secrets.CONNECTED_APP_CLIENT_ID }}" \
             -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
@@ -79,7 +79,7 @@ jobs:
           echo "🚀 Publicando Parent POM no Anypoint Exchange (sem incremento)"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           cd parent-pom
-          mvn clean deploy --settings ../.maven/settings.xml \
+          mvn deploy --settings ../.maven/settings.xml \
             -DskipTests \
             -Dclient.id="${{ secrets.CONNECTED_APP_CLIENT_ID }}" \
             -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
