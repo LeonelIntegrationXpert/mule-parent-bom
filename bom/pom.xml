@@ -1,30 +1,106 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+===============================================================================
+  📦 MuleSoft BOM (Bill of Materials) - common-bom
+===============================================================================
+  🎯 Objetivo:
+    • Centralizar e padronizar **versões** (connectors, libs MUnit, plugins) 
+      e **propriedades** fundamentais para projetos MuleSoft.  
+    • Facilitar a governança de versões, evitando conflitos e garantindo 
+      consistência em vários ambientes (Dev, QA, Prod).
+
+===============================================================================
+  ✍ Autor     : Leonel Dorneles Porto  
+  📧 Email     : leoneldornelesporto@outlook.com.br  
+  ☎ Telefone  : +55 53 99180-4869
+===============================================================================
+  📚 Descrição:
+    - Garante que todos os projetos MuleSoft (ou um Parent POM) possam
+      **importar** este BOM para ter as **mesmas versões** de runtime, 
+      conectores, MUnit etc.
+    - Eventualmente, também contém propriedades de CloudHub (env, region)
+      caso desejado – porém, **geralmente** são colocadas no Parent POM.
+    - Cada time/organização pode ajustar livremente conforme suas políticas.
+===============================================================================
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
                              https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
+    <!-- (1) Versão do Modelo do POM -->
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- Ajuste groupId/artifactId conforme desejar -->
-    <groupId>com.leonel.integration</groupId>
-    <artifactId>mule-common-bom</artifactId>
+    <!-- 
+    =============================================================================
+     (2) Identificação do BOM
+       - groupId/artifactId/version ajustados à organização.
+       - packaging = pom (modelo BOM).
+    =============================================================================
+    -->
+    <groupId>37a4147b-4673-4cb6-b589-358074a13f8c</groupId>
+    <artifactId>common-bom</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
-    <name>mule-bom</name>
+    <name>common-bom</name>
+    <description>📦 BOM (Bill of Materials) para padronização de dependências, versões de conectores e bibliotecas MuleSoft. Evita conflitos e garante consistência em ambientes Dev, QA e Produção.</description>
 
+    <!-- 
+    =============================================================================
+     (3) PROPRIEDADES
+       - Focadas em **versões** e, opcionalmente, 
+         algumas props de CloudHub ou MUnit, se desejado.
+    =============================================================================
+    -->
     <properties>
-        <assertions.version>1.0.2</assertions.version>
+        <!-- 🌐 ENCODING / BUILD -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>8</java.version>
+
+        <!-- 🏷 Mule Runtime e Release Channel (LTS/EA) -->
+        <app.runtime>4.6.14</app.runtime>
+        <releaseChannel>LTS</releaseChannel>
+
+        <!-- 🔧 Plugins de Build (Mule Maven, MUnit etc.) -->
+        <mule.maven.plugin.version>4.4.0</mule.maven.plugin.version>
         <munit.version>3.2.1</munit.version>
+        <assertions.version>1.0.2</assertions.version>
+        <maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
+
+        <!-- 🔌 Conectores Mule (HTTP, Sockets, etc.) -->
         <http.connector.version>1.10.3</http.connector.version>
         <sockets.connector.version>1.2.5</sockets.connector.version>
+
+        <!-- 🔏 Chave e Repositório -->
+        <key>Chave descript aqui...</key>
+        <serverId>Repository</serverId>
+        <anypoint.platform.url>https://anypoint.mulesoft.com</anypoint.platform.url>
+        <base.maven.anypoint.url>https://maven.anypoint.mulesoft.com/api/v2</base.maven.anypoint.url>
+        <anypoint.exchange.v3.url>${base.maven.anypoint.url}/maven</anypoint.exchange.v3.url>
+        <private.exchange.url>${base.maven.anypoint.url}/organizations/${project.groupId}/maven</private.exchange.url>
+		<!-- 🌐 Repositório de Releases da MuleSoft -->
+		<mulesoft.releases.repo.url>https://repository.mulesoft.org/releases/</mulesoft.releases.repo.url>
+
+
+        <!-- 🗄 Layouts de Repositório -->
+        <mulesoft-releases.layout>default</mulesoft-releases.layout>
+        <anypoint-exchange-v3.layout>default</anypoint-exchange-v3.layout>
+        <private-exchange-repository.layout>default</private-exchange-repository.layout>
+        <corporate-repository.layout>default</corporate-repository.layout>
     </properties>
 
+    <!-- 
+    =============================================================================
+     (4) DEPENDENCY MANAGEMENT
+       • Controla versões de libs Mule (HTTP, Sockets, MUnit, etc.).
+       • Projetos (ou um Parent POM) importam estas versões via <dependencyManagement>.
+    =============================================================================
+    -->
     <dependencyManagement>
         <dependencies>
-
-            <!-- Assertions para DataWeave (test MUnit) -->
+            <!-- 🧪 MUnit Assertions (DataWeave) -->
             <dependency>
                 <groupId>org.mule.weave</groupId>
                 <artifactId>assertions</artifactId>
@@ -32,7 +108,7 @@
                 <scope>test</scope>
             </dependency>
 
-            <!-- MUnit Tools -->
+            <!-- 🧩 MUnit Tools (mule-plugin) -->
             <dependency>
                 <groupId>com.mulesoft.munit</groupId>
                 <artifactId>munit-tools</artifactId>
@@ -41,7 +117,15 @@
                 <scope>test</scope>
             </dependency>
 
-            <!-- Runner do MUnit -->
+            <!-- 🌐 HTTP Connector para Mule 4 -->
+            <dependency>
+                <groupId>org.mule.connectors</groupId>
+                <artifactId>mule-http-connector</artifactId>
+                <version>${http.connector.version}</version>
+                <classifier>mule-plugin</classifier>
+            </dependency>
+
+            <!-- 🏃 Runner do MUnit (mule-plugin) -->
             <dependency>
                 <groupId>com.mulesoft.munit</groupId>
                 <artifactId>munit-runner</artifactId>
@@ -50,23 +134,79 @@
                 <scope>test</scope>
             </dependency>
 
-            <!-- HTTP Connector -->
-            <dependency>
-                <groupId>org.mule.connectors</groupId>
-                <artifactId>mule-http-connector</artifactId>
-                <version>${http.connector.version}</version>
-                <classifier>mule-plugin</classifier>
-            </dependency>
-
-            <!-- Sockets Connector -->
+            <!-- 💻 Conector de Sockets (opcional) -->
             <dependency>
                 <groupId>org.mule.connectors</groupId>
                 <artifactId>mule-sockets-connector</artifactId>
                 <version>${sockets.connector.version}</version>
                 <classifier>mule-plugin</classifier>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
+
+    <!-- 
+    =============================================================================
+     (5) REPOSITORIES 
+       • Onde o Maven busca dependências para os conectores e libs Mule.
+    =============================================================================
+    -->
+    <repositories>
+        <!-- Repositório do Anypoint Exchange v3 -->
+        <repository>
+            <id>anypoint-exchange-v3</id>
+            <name>Anypoint Exchange</name>
+            <url>${anypoint.exchange.v3.url}</url>
+            <layout>${anypoint-exchange-v3.layout}</layout>
+        </repository>
+
+        <!-- Repositório de releases da MuleSoft -->
+        <repository>
+            <id>mulesoft-releases</id>
+            <name>MuleSoft Releases Repository</name>
+            <url>https://repository.mulesoft.org/releases/</url>
+            <layout>${mulesoft-releases.layout}</layout>
+        </repository>
+
+        <!-- Repositório privado / personalizado -->
+        <repository>
+            <id>${serverId}</id>
+            <name>Private Exchange repository</name>
+            <url>${private.exchange.url}</url>
+            <layout>${private-exchange-repository.layout}</layout>
+        </repository>
+    </repositories>
+
+    <!-- 
+    =============================================================================
+     (6) PLUGIN REPOSITORIES
+       • Onde Maven busca plugins Mule e MUnit.
+    =============================================================================
+    -->
+    <pluginRepositories>
+        <pluginRepository>
+            <id>mulesoft-releases</id>
+            <name>MuleSoft Releases Repository</name>
+            <layout>${mulesoft-releases.layout}</layout>
+            <url>https://repository.mulesoft.org/releases/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <!-- 
+    =============================================================================
+     (7) DISTRIBUTION MANAGEMENT
+       • Publicação do BOM no Exchange, caso deseje compartilhá-lo.
+    =============================================================================
+    -->
+    <distributionManagement>
+        <repository>
+            <id>${serverId}</id>
+            <name>Corporate Repository</name>
+            <url>${private.exchange.url}</url>
+            <layout>${corporate-repository.layout}</layout>
+        </repository>
+    </distributionManagement>
 
 </project>
