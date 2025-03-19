@@ -3,8 +3,6 @@
 #################################################################################################
 # Projeto   : mule-parent-bom
 # Autor     : Leonel Dorneles Porto
-# Email     : leoneldornelesporto@outlook.com.br
-# Telefone  : +55 53 99180-4869
 #################################################################################################
 # Descrição :
 #   - Publica o Parent POM e BOM no Anypoint Exchange
@@ -56,7 +54,13 @@ jobs:
           git pull origin $GITHUB_REF_NAME --rebase
 
       #########################################################################
-      # 4. Incrementa versão BOM e Parent POM (explícito!)
+      # 4. Instala xmllint para manipular XML
+      #########################################################################
+      - name: 🛠️ Instala xmllint (libxml2-utils)
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+
+      #########################################################################
+      # 5. Incrementa versão BOM e Parent POM (explícito!)
       #########################################################################
       - name: 🔖 Incrementar versão BOM + Parent POM
         run: |
@@ -89,7 +93,7 @@ jobs:
           BOM_POM="bom/pom.xml"
           echo "📦 Localizando BOM em $BOM_POM"
           
-          BOM_CURRENT_VERSION=$(xmllint --xpath "string(//project/version)" "$BOM_POM")
+          BOM_CURRENT_VERSION=$(xmllint --xpath "string(/project/version)" "$BOM_POM")
           echo "🔎 Versão atual do BOM: $BOM_CURRENT_VERSION"
           
           BOM_NEW_VERSION=$(increment_version_number "$BOM_CURRENT_VERSION")
@@ -120,7 +124,7 @@ jobs:
           set $PARENT_NEW_VERSION
           save
           EOF
-
+          
           # Atualiza a <version> dentro do <parent> tag (referência ao BOM)
           xmllint --shell "$PARENT_POM" <<EOF
           cd /project/parent/version
@@ -129,25 +133,22 @@ jobs:
           EOF
 
           #####################################################################
-          # 3️⃣ Commita e envia alterações
+          # 3️⃣ Commit e Push
           #####################################################################
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add "$BOM_POM" "$PARENT_POM"
           git commit -m "🔖 Bump BOM to ${BOM_NEW_VERSION} and Parent POM to ${PARENT_NEW_VERSION} [CI/CD auto]"
 
-          echo "🚀 Fazendo push das versões atualizadas..."
+          echo "🚀 Push nas versões atualizadas..."
           git pull origin $GITHUB_REF_NAME --rebase
           git push origin $GITHUB_REF_NAME
 
       #########################################################################
-      # 5. Publica BOM no Anypoint Exchange
+      # 6. Publica BOM no Anypoint Exchange
       #########################################################################
       - name: 📦 Publicar BOM no Exchange
         run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "📦 Publicando BOM no Anypoint Exchange"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           cd bom
           mvn clean deploy --settings ../.maven/settings.xml \
             -DskipTests \
@@ -156,13 +157,10 @@ jobs:
         timeout-minutes: 10
 
       #########################################################################
-      # 6. Publica Parent POM no Anypoint Exchange
+      # 7. Publica Parent POM no Anypoint Exchange
       #########################################################################
       - name: 📦 Publicar Parent POM no Exchange
         run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🚀 Publicando Parent POM no Anypoint Exchange"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           cd parent-pom
           mvn clean deploy --settings ../.maven/settings.xml \
             -DskipTests \
@@ -171,7 +169,7 @@ jobs:
         timeout-minutes: 10
 
       #########################################################################
-      # 7. Upload Maven logs se falhar
+      # 8. Upload Maven logs se falhar
       #########################################################################
       - name: 📤 Upload Maven logs (apenas se falhar)
         if: failure()
