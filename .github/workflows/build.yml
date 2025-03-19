@@ -69,64 +69,64 @@ jobs:
           echo "🔖 Iniciando incremento de versão (BOM e Parent POM)"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          increment_version() {
-            local pom_file="$1"
-            local bom_version="$2"
+          # Função para incrementar versões no estilo MAJOR.MINOR.PATCH
+          increment_version_number() {
+            local base_version="$1"
 
-            if [ ! -f "$pom_file" ]; then
-              echo "❌ $pom_file não encontrado."
-              return 1
-            fi
-
-            # Versão atual
-            local BASE_VERSION=$(grep -m 1 '<version>' "$pom_file" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
-            echo "📌 Versão atual ($pom_file): $BASE_VERSION"
-
-            # Incrementa PATCH
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$base_version"
             PATCH=$((PATCH + 1))
 
-            # Overflow PATCH > 99
             if [ "$PATCH" -gt 99 ]; then
               PATCH=0
               MINOR=$((MINOR + 1))
             fi
 
-            # Overflow MINOR > 99
             if [ "$MINOR" -gt 99 ]; then
               MINOR=0
               MAJOR=$((MAJOR + 1))
             fi
 
-            NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-            echo "🚀 Nova versão para $pom_file: $NEW_VERSION"
-
-            # Atualiza a <version> do próprio POM
-            sed -i "0,/<version>.*<\/version>/s//<version>${NEW_VERSION}<\/version>/" "$pom_file"
-
-            # Se for o parent-pom, atualiza a dependência do BOM nele
-            if [[ "$pom_file" == *"parent-pom/pom.xml"* ]]; then
-              echo "🔗 Atualizando referência ao common-bom (${bom_version}) no parent-pom"
-              sed -i "0,/<parent>/{N;s/<version>.*<\/version>/<version>${bom_version}<\/version>/;}" "$pom_file"
-            fi
-
-            # Commita alterações
-            git config user.name "github-actions"
-            git config user.email "github-actions@github.com"
-            git add "$pom_file"
-            git commit -m "🔖 Bump version to $NEW_VERSION in $pom_file [CI/CD auto]"
+            echo "${MAJOR}.${MINOR}.${PATCH}"
           }
 
-          #### Incrementa BOM e guarda nova versão para usar no Parent POM
+          #########################################################################
+          # Incrementa BOM
+          #########################################################################
           echo "📦 Incrementando BOM..."
-          increment_version "bom/pom.xml"
-          NEW_BOM_VERSION=$(grep -m 1 '<version>' bom/pom.xml | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+          BOM_POM="bom/pom.xml"
+          BOM_CURRENT_VERSION=$(grep -m 1 '<version>' "$BOM_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+          BOM_NEW_VERSION=$(increment_version_number "$BOM_CURRENT_VERSION")
+          echo "🚀 Nova versão BOM: $BOM_NEW_VERSION"
 
-          #### Incrementa o Parent POM e aponta para o BOM correto
-          echo "📦 Incrementando Parent POM (com BOM $NEW_BOM_VERSION)..."
-          increment_version "parent-pom/pom.xml" "$NEW_BOM_VERSION"
+          # Atualiza <version> no BOM
+          sed -i "0,/<version>.*<\/version>/s//<version>${BOM_NEW_VERSION}<\/version>/" "$BOM_POM"
 
-          #### Push das alterações para a branch atual
+          #########################################################################
+          # Incrementa Parent POM e atualiza referência ao BOM
+          #########################################################################
+          echo "📦 Incrementando Parent POM (com BOM $BOM_NEW_VERSION)..."
+          PARENT_POM="parent-pom/pom.xml"
+          PARENT_CURRENT_VERSION=$(grep -m 1 '<version>' "$PARENT_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+          PARENT_NEW_VERSION=$(increment_version_number "$PARENT_CURRENT_VERSION")
+          echo "🚀 Nova versão Parent POM: $PARENT_NEW_VERSION"
+
+          # Atualiza <version> no próprio Parent POM
+          sed -i "0,/<version>.*<\/version>/s//<version>${PARENT_NEW_VERSION}<\/version>/" "$PARENT_POM"
+
+          # Atualiza referência ao BOM no <parent>
+          sed -i "0,/<parent>/{N;N;s/<version>.*<\/version>/<version>${BOM_NEW_VERSION}<\/version>/;}" "$PARENT_POM"
+
+          #########################################################################
+          # Git Commit das alterações
+          #########################################################################
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add "$BOM_POM" "$PARENT_POM"
+          git commit -m "🔖 Bump BOM to ${BOM_NEW_VERSION} and Parent POM to ${PARENT_NEW_VERSION} [CI/CD auto]"
+
+          #########################################################################
+          # Push das alterações para a branch atual
+          #########################################################################
           echo "🚀 Realizando push das versões atualizadas..."
           git pull origin $GITHUB_REF_NAME --rebase
           git push origin $GITHUB_REF_NAME
