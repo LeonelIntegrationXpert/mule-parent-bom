@@ -49,7 +49,7 @@ jobs:
       #########################################################################
       # 3. Atualiza a branch antes do bump de versão
       #########################################################################
-      - name: 🔄 Atualiza a branch antes de incrementar a versão
+      - name: 🔄 Atualiza a branch local antes do incremento de versão
         run: |
           git fetch origin
           git checkout $GITHUB_REF_NAME
@@ -61,14 +61,11 @@ jobs:
       - name: 🔖 Incrementar Versão BOM + Parent POM
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🔖 Incrementando versões BOM e Parent POM (controle explícito)"
+          echo "🔖 Incrementando versões BOM e Parent POM com SemVer simplificado"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           increment_version_number() {
             local base_version="$1"
-
-            # Limpa espaços e quebras de linha
-            base_version=$(echo "$base_version" | tr -d '[:space:]')
 
             IFS='.' read -r MAJOR MINOR PATCH <<< "$base_version"
             PATCH=$((PATCH + 1))
@@ -90,45 +87,36 @@ jobs:
           # Incrementa BOM
           #####################################################################
           BOM_POM="bom/pom.xml"
-          echo "📦 Incrementando versão do BOM"
-
-          BOM_CURRENT_VERSION=$(grep -m 1 '<version>' "$BOM_POM" | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
-          echo "🔎 Versão atual do BOM: $BOM_CURRENT_VERSION"
-
+          BOM_CURRENT_VERSION=$(grep -m 1 '<version>' "$BOM_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
           BOM_NEW_VERSION=$(increment_version_number "$BOM_CURRENT_VERSION")
-          echo "🚀 Nova versão do BOM: $BOM_NEW_VERSION"
+          echo "📦 Nova versão BOM: $BOM_NEW_VERSION"
 
-          # Atualiza <version> no BOM (<project>/<version>)
+          # Atualiza <version> no BOM (primeira ocorrência)
           sed -i "0,/<version>.*<\/version>/s//<version>${BOM_NEW_VERSION}<\/version>/" "$BOM_POM"
 
           #####################################################################
-          # Incrementa Parent POM e atualiza referência ao BOM
+          # Incrementa Parent POM + Atualiza a referência do BOM nele
           #####################################################################
           PARENT_POM="parent-pom/pom.xml"
-          echo "📦 Incrementando versão do Parent POM e atualizando referência do BOM"
-
-          # Extrai a versão atual do próprio Parent POM (<project>/<version>)
-          PARENT_CURRENT_VERSION=$(xmllint --xpath "string(/project/version)" "$PARENT_POM")
-          echo "🔎 Versão atual do Parent POM: $PARENT_CURRENT_VERSION"
-
+          PARENT_CURRENT_VERSION=$(grep -m 1 '<version>' "$PARENT_POM" | head -n1 | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
           PARENT_NEW_VERSION=$(increment_version_number "$PARENT_CURRENT_VERSION")
-          echo "🚀 Nova versão do Parent POM: $PARENT_NEW_VERSION"
+          echo "📦 Nova versão Parent POM: $PARENT_NEW_VERSION"
 
-          # Atualiza <project>/<version> no Parent POM (só a primeira ocorrência fora do <parent>)
+          # Atualiza <version> do próprio Parent POM (primeira fora do <parent>)
           sed -i "0,/<version>.*<\/version>/s//<version>${PARENT_NEW_VERSION}<\/version>/" "$PARENT_POM"
 
-          # Atualiza a versão do BOM dentro da tag <parent>
+          # Atualiza versão do BOM dentro da <parent> tag
           sed -i "/<parent>/,/<\/parent>/ s/<version>.*<\/version>/<version>${BOM_NEW_VERSION}<\/version>/" "$PARENT_POM"
 
           #####################################################################
-          # Commit e Push
+          # Git commit e push
           #####################################################################
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add "$BOM_POM" "$PARENT_POM"
           git commit -m "🔖 Bump BOM to ${BOM_NEW_VERSION} and Parent POM to ${PARENT_NEW_VERSION} [CI/CD auto]"
 
-          echo "🚀 Push das versões atualizadas..."
+          echo "🚀 Fazendo push das versões atualizadas..."
           git pull origin $GITHUB_REF_NAME --rebase
           git push origin $GITHUB_REF_NAME
 
