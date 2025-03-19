@@ -3,6 +3,8 @@
 #################################################################################################
 # Projeto   : mule-parent-bom
 # Autor     : Leonel Dorneles Porto
+# Email     : leoneldornelesporto@outlook.com.br
+# Telefone  : +55 53 99180-4869
 #################################################################################################
 # Descrição :
 #   - Publica o Parent POM e BOM no Anypoint Exchange
@@ -45,7 +47,13 @@ jobs:
           cache: maven
 
       #########################################################################
-      # 3. Atualiza a branch antes do bump de versão
+      # 3. Instala dependências extras (xmllint)
+      #########################################################################
+      - name: 🛠 Instala xmllint
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+
+      #########################################################################
+      # 4. Atualiza a branch local antes do bump
       #########################################################################
       - name: 🔄 Atualiza a branch antes de incrementar a versão
         run: |
@@ -54,13 +62,7 @@ jobs:
           git pull origin $GITHUB_REF_NAME --rebase
 
       #########################################################################
-      # 4. Instala xmllint para manipular XML
-      #########################################################################
-      - name: 🛠️ Instala xmllint (libxml2-utils)
-        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
-
-      #########################################################################
-      # 5. Incrementa versão BOM e Parent POM (explícito!)
+      # 5. Incremento de Versão BOM + Parent POM (100% explícito)
       #########################################################################
       - name: 🔖 Incrementar versão BOM + Parent POM
         run: |
@@ -87,50 +89,65 @@ jobs:
             echo "${MAJOR}.${MINOR}.${PATCH}"
           }
 
+          extract_project_version() {
+            local pom_file="$1"
+
+            # Primeiro tenta com xmllint
+            local version=$(xmllint --xpath "string(/project/version)" "$pom_file" 2>/dev/null)
+
+            if [ -z "$version" ]; then
+              echo "⚠️ Não encontrou a <version> no caminho /project/version. Tentando com grep..."
+              # fallback usando grep se xmllint falhar
+              version=$(grep -A1 '<artifactId>' "$pom_file" | grep -m1 '<version>' | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+            fi
+
+            echo "$version"
+          }
+
           #####################################################################
           # 1️⃣ Incrementa BOM
           #####################################################################
           BOM_POM="bom/pom.xml"
           echo "📦 Localizando BOM em $BOM_POM"
           
-          BOM_CURRENT_VERSION=$(xmllint --xpath "string(/project/version)" "$BOM_POM")
+          BOM_CURRENT_VERSION=$(extract_project_version "$BOM_POM")
+
+          if [ -z "$BOM_CURRENT_VERSION" ]; then
+            echo "❌ Não foi possível identificar a versão atual do BOM. Abortando!"
+            exit 1
+          fi
+
           echo "🔎 Versão atual do BOM: $BOM_CURRENT_VERSION"
-          
+
           BOM_NEW_VERSION=$(increment_version_number "$BOM_CURRENT_VERSION")
           echo "🚀 Nova versão BOM: $BOM_NEW_VERSION"
 
-          # Atualiza <version> diretamente no <project> do BOM
-          xmllint --shell "$BOM_POM" <<EOF
-          cd /project/version
-          set $BOM_NEW_VERSION
-          save
-          EOF
+          # Atualiza a <version> no BOM (<project>)
+          sed -i "0,/<version>.*<\/version>/s//<version>${BOM_NEW_VERSION}<\/version>/" "$BOM_POM"
 
           #####################################################################
-          # 2️⃣ Incrementa Parent POM e referencia o BOM
+          # 2️⃣ Incrementa Parent POM e atualiza o BOM referenciado
           #####################################################################
           PARENT_POM="parent-pom/pom.xml"
           echo "📦 Localizando Parent POM em $PARENT_POM"
 
-          PARENT_CURRENT_VERSION=$(xmllint --xpath "string(/project/version)" "$PARENT_POM")
+          PARENT_CURRENT_VERSION=$(extract_project_version "$PARENT_POM")
+
+          if [ -z "$PARENT_CURRENT_VERSION" ]; then
+            echo "❌ Não foi possível identificar a versão atual do Parent POM. Abortando!"
+            exit 1
+          fi
+
           echo "🔎 Versão atual do Parent POM: $PARENT_CURRENT_VERSION"
 
           PARENT_NEW_VERSION=$(increment_version_number "$PARENT_CURRENT_VERSION")
           echo "🚀 Nova versão Parent POM: $PARENT_NEW_VERSION"
 
-          # Atualiza a <version> diretamente no <project> do Parent POM
-          xmllint --shell "$PARENT_POM" <<EOF
-          cd /project/version
-          set $PARENT_NEW_VERSION
-          save
-          EOF
-          
-          # Atualiza a <version> dentro do <parent> tag (referência ao BOM)
-          xmllint --shell "$PARENT_POM" <<EOF
-          cd /project/parent/version
-          set $BOM_NEW_VERSION
-          save
-          EOF
+          # Atualiza a <version> do próprio Parent POM (<project>)
+          sed -i "0,/<version>.*<\/version>/s//<version>${PARENT_NEW_VERSION}<\/version>/" "$PARENT_POM"
+
+          # Atualiza a versão do BOM na tag <parent> do parent-pom.xml
+          sed -i "/<parent>/,/<\/parent>/ s/<version>.*<\/version>/<version>${BOM_NEW_VERSION}<\/version>/" "$PARENT_POM"
 
           #####################################################################
           # 3️⃣ Commit e Push
@@ -145,7 +162,7 @@ jobs:
           git push origin $GITHUB_REF_NAME
 
       #########################################################################
-      # 6. Publica BOM no Anypoint Exchange
+      # 6. Publicar BOM no Anypoint Exchange
       #########################################################################
       - name: 📦 Publicar BOM no Exchange
         run: |
@@ -157,7 +174,7 @@ jobs:
         timeout-minutes: 10
 
       #########################################################################
-      # 7. Publica Parent POM no Anypoint Exchange
+      # 7. Publicar Parent POM no Anypoint Exchange
       #########################################################################
       - name: 📦 Publicar Parent POM no Exchange
         run: |
