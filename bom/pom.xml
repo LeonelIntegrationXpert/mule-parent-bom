@@ -77,11 +77,11 @@
         <key>Chave descript aqui...</key>
         <serverId>Repository</serverId>
         <anypoint.platform.url>https://anypoint.mulesoft.com</anypoint.platform.url>
-        <base.maven.anypoint.url>https://maven.anypoint.mulesoft.com/api/v2</base.maven.anypoint.url>
+        <base.maven.anypoint.url>https://maven.anypoint.mulesoft.com/api/v3</base.maven.anypoint.url>
         <anypoint.exchange.v3.url>${base.maven.anypoint.url}/maven</anypoint.exchange.v3.url>
         <private.exchange.url>${base.maven.anypoint.url}/organizations/${project.groupId}/maven</private.exchange.url>
-		<!-- 🌐 Repositório de Releases da MuleSoft -->
-		<mulesoft.releases.repo.url>https://repository.mulesoft.org/releases/</mulesoft.releases.repo.url>
+	<!-- 🌐 Repositório de Releases da MuleSoft -->
+	<mulesoft.releases.repo.url>https://repository.mulesoft.org/releases/</mulesoft.releases.repo.url>
 
 
         <!-- 🗄 Layouts de Repositório -->
