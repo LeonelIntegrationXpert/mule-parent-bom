@@ -28,17 +28,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      #########################################################################
-      # 1. Checkout do repositório
-      #########################################################################
       - name: 📥 Checkout do repositório
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      #########################################################################
-      # 2. Setup JDK 8 (Zulu) + Maven Cache
-      #########################################################################
       - name: ☕ Setup JDK 8 com cache Maven
         uses: actions/setup-java@v4
         with:
@@ -46,103 +40,54 @@ jobs:
           java-version: 8
           cache: maven
 
-      #########################################################################
-      # 3. Atualiza a branch antes do bump de versão
-      #########################################################################
-      - name: 🔄 Atualiza a branch local antes do incremento de versão
+      - name: 🔄 Atualiza a branch local
         run: |
           git fetch origin
           git checkout $GITHUB_REF_NAME
           git pull origin $GITHUB_REF_NAME --rebase
 
-      #########################################################################
-      # 4. Instala dependências para manipulação XML (xmllint)
-      #########################################################################
       - name: 🛠️ Instala dependências XML
         run: sudo apt-get update && sudo apt-get install -y libxml2-utils
 
-      #########################################################################
-      # 5. Incremento de Versão BOM + Parent POM (com atualização da referência)
-      #########################################################################
-      - name: 🔖 Incrementar Versão BOM + Parent POM
+      - name: 🔖 Incrementar versão do BOM (1º Commit)
         run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🔖 Incrementando versões BOM e Parent POM (explícito)"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-          increment_version_number() {
-            local base_version="$1"
-
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$base_version"
-            PATCH=$((PATCH + 1))
-
-            if [ "$PATCH" -gt 99 ]; then
-              PATCH=0
-              MINOR=$((MINOR + 1))
-            fi
-
-            if [ "$MINOR" -gt 99 ]; then
-              MINOR=0
-              MAJOR=$((MAJOR + 1))
-            fi
-
-            echo "${MAJOR}.${MINOR}.${PATCH}"
-          }
-
-          #####################################################################
-          # Incrementa BOM
-          #####################################################################
           BOM_POM="bom/pom.xml"
-          echo "📦 Incrementando versão do BOM"
-
           BOM_CURRENT_VERSION=$(xmllint --xpath "string(/project/version)" "$BOM_POM")
-          echo "🔎 Versão atual do BOM: $BOM_CURRENT_VERSION"
 
-          BOM_NEW_VERSION=$(increment_version_number "$BOM_CURRENT_VERSION")
-          echo "🚀 Nova versão do BOM: $BOM_NEW_VERSION"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$BOM_CURRENT_VERSION"
+          PATCH=$((PATCH + 1))
+          BOM_NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 
-          # Atualiza <project><version> no BOM
           sed -i "0,/<version>.*<\/version>/s//<version>${BOM_NEW_VERSION}<\/version>/" "$BOM_POM"
 
-          #####################################################################
-          # Incrementa Parent POM + Atualiza a referência do BOM
-          #####################################################################
+          # Atualiza versão do BOM na referência do Parent
           PARENT_POM="parent-pom/pom.xml"
-          echo "📦 Incrementando versão do Parent POM e atualizando referência do BOM"
-
-          # Obtém versão atual de <project><version> do Parent POM
-          PARENT_CURRENT_VERSION=$(xmllint --xpath "string(/project/version)" "$PARENT_POM")
-          echo "🔎 Versão atual do Parent POM: $PARENT_CURRENT_VERSION"
-
-          PARENT_NEW_VERSION=$(increment_version_number "$PARENT_CURRENT_VERSION")
-          echo "🚀 Nova versão do Parent POM: $PARENT_NEW_VERSION"
-
-          # Atualiza <project><version> do Parent POM
-          sed -i "0,/<version>.*<\/version>/s//<version>${PARENT_NEW_VERSION}<\/version>/" "$PARENT_POM"
-
-          # Atualiza a versão do BOM dentro da <parent> do Parent POM
           sed -i "/<parent>/,/<\/parent>/ s/<version>.*<\/version>/<version>${BOM_NEW_VERSION}<\/version>/" "$PARENT_POM"
 
-          #####################################################################
-          # Git commit e push
-          #####################################################################
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add "$BOM_POM" "$PARENT_POM"
-          git commit -m "🔖 Bump BOM to ${BOM_NEW_VERSION} and Parent POM to ${PARENT_NEW_VERSION} [CI/CD auto]"
+          git commit -m "🔖 Bump BOM version to ${BOM_NEW_VERSION} [CI/CD auto]"
 
-          echo "🚀 Fazendo push das versões atualizadas..."
+      - name: 🔖 Incrementar versão do Parent POM (2º Commit)
+        run: |
+          PARENT_POM="parent-pom/pom.xml"
+          PARENT_CURRENT_VERSION=$(xmllint --xpath "string(/project/version)" "$PARENT_POM")
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$PARENT_CURRENT_VERSION"
+          PATCH=$((PATCH + 1))
+          PARENT_NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+
+          sed -i "0,/<version>.*<\/version>/s//<version>${PARENT_NEW_VERSION}<\/version>/" "$PARENT_POM"
+
+          git add "$PARENT_POM"
+          git commit -m "🔖 Bump Parent POM version to ${PARENT_NEW_VERSION} [CI/CD auto]"
+
           git pull origin $GITHUB_REF_NAME --rebase
           git push origin $GITHUB_REF_NAME
 
-      #########################################################################
-      # 6. Publica BOM no Anypoint Exchange
-      #########################################################################
       - name: 📦 Publicar BOM no Exchange
         run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "📦 Publicando BOM no Anypoint Exchange"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           cd bom
           mvn clean deploy --settings ../.maven/settings.xml \
             -DskipTests \
@@ -150,14 +95,8 @@ jobs:
             -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
         timeout-minutes: 10
 
-      #########################################################################
-      # 7. Publica Parent POM no Anypoint Exchange
-      #########################################################################
       - name: 📦 Publicar Parent POM no Exchange
         run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🚀 Publicando Parent POM no Anypoint Exchange"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           cd parent-pom
           mvn clean deploy --settings ../.maven/settings.xml \
             -DskipTests \
@@ -165,10 +104,7 @@ jobs:
             -Dclient.secret="${{ secrets.CONNECTED_APP_CLIENT_SECRET }}"
         timeout-minutes: 10
 
-      #########################################################################
-      # 8. Upload Maven logs se falhar
-      #########################################################################
-      - name: 📤 Upload Maven logs (apenas se falhar)
+      - name: 📤 Upload Maven logs (se falhar)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
