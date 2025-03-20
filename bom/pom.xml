@@ -84,6 +84,18 @@
 	<mulesoft.releases.repo.url>https://repository.mulesoft.org/releases/</mulesoft.releases.repo.url>
 
 
+	    <!-- ID da organização (conforme Anypoint) -->
+	    <anypoint.organization.id>37a4147b-4673-4cb6-b589-358074a13f8c</anypoint.organization.id>
+	
+	    <!-- URL base do Maven Anypoint -->
+	    <base.maven.anypoint.url>https://maven.anypoint.mulesoft.com/api/v3</base.maven.anypoint.url>
+	
+	    <!-- URL para repositório privado no Exchange (org + groupId real da org) -->
+	    <private.exchange.url>${base.maven.anypoint.url}/organizations/${anypoint.organization.id}/maven</private.exchange.url>
+	
+	    <!-- URL Exchange v3, também pode ser consumida como ${anypoint.exchange.v3.url} -->
+	    <anypoint.exchange.v3.url>${base.maven.anypoint.url}/maven</anypoint.exchange.v3.url>
+
         <!-- 🗄 Layouts de Repositório -->
         <mulesoft-releases.layout>default</mulesoft-releases.layout>
         <anypoint-exchange-v3.layout>default</anypoint-exchange-v3.layout>
