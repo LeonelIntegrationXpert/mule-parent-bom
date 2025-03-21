@@ -73,13 +73,13 @@
         <http.connector.version>1.10.3</http.connector.version>
         <sockets.connector.version>1.2.5</sockets.connector.version>
 
-        <!-- 🔏 Chave e Repositório -->
-        <key>Chave descript aqui...</key>
-        <serverId>Repository</serverId>
-        <anypoint.platform.url>https://anypoint.mulesoft.com</anypoint.platform.url>
-        <base.maven.anypoint.url>https://maven.anypoint.mulesoft.com/api/v2</base.maven.anypoint.url>
-        <anypoint.exchange.v2.url>${base.maven.anypoint.url}/maven</anypoint.exchange.v2.url>
-        <private.exchange.url>${base.maven.anypoint.url}/organizations/${project.groupId}/maven</private.exchange.url>
+	<!-- 🔏 Chave e Repositório -->
+	<key>Chave descript aqui...</key>
+	<serverId>Repository</serverId>
+	<anypoint.platform.url>https://anypoint.mulesoft.com</anypoint.platform.url>
+	<base.maven.anypoint.url>https://maven.anypoint.mulesoft.com/api/v2</base.maven.anypoint.url>
+	<anypoint.exchange.v2.url>${base.maven.anypoint.url}/maven</anypoint.exchange.v2.url>
+	<private.exchange.url>${base.maven.anypoint.url}/organizations/${project.groupId}/maven</private.exchange.url>
 	<!-- 🌐 Repositório de Releases da MuleSoft -->
 	<mulesoft.releases.repo.url>https://repository.mulesoft.org/releases/</mulesoft.releases.repo.url>
 
@@ -152,12 +152,12 @@
     -->
     <repositories>
         <!-- Repositório do Anypoint Exchange v3 -->
-        <repository>
-            <id>anypoint-exchange-v3</id>
-            <name>Anypoint Exchange</name>
-            <url>${anypoint.exchange.v3.url}</url>
-            <layout>${anypoint-exchange-v3.layout}</layout>
-        </repository>
+	<repository>
+	    <id>anypoint-exchange-v2</id>
+	    <name>Anypoint Exchange</name>
+	    <url>${anypoint.exchange.v2.url}</url>
+	    <layout>${anypoint-exchange-v2.layout}</layout>
+	</repository>
 
         <!-- Repositório de releases da MuleSoft -->
         <repository>
