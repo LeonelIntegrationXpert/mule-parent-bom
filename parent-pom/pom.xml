@@ -37,7 +37,7 @@
     <parent>
         <groupId>9d86053c-c394-4e52-b33c-029e02b59822</groupId>
         <artifactId>common-bom</artifactId>
-        <version>1.5.0</version>
+        <version>1.0.0</version>
     </parent>
 
     <!-- 
@@ -48,7 +48,7 @@
     -->
     <groupId>9d86053c-c394-4e52-b33c-029e02b59822</groupId>
     <artifactId>common-pom-parent</artifactId>
-    <version>1.5.0</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
 
     <name>common-pom-parent</name>
