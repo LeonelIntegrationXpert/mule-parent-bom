@@ -156,9 +156,7 @@
                             <environment>${env}</environment>
                             <target>${region}</target>
                             <server>${serverId}</server>
-                            
-                            <!-- Nome: "artifactId-layer-env" -->
-                            <!-- <applicationName>${app.namingPattern}</applicationName> -->
+                            <applicationName>${app.namingPattern}</applicationName>
 
                             <!-- Versão Mule + releaseChannel (LTS / EA) -->
                             <muleVersion>${app.runtime}</muleVersion>
