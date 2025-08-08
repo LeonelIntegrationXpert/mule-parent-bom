@@ -57,11 +57,6 @@
         <!-- 🌐 ENCODING / BUILD -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>8</java.version>
-
-        <!-- 🏷 Mule Runtime e Release Channel (LTS/EA) -->
-        <app.runtime>4.9.0</app.runtime>
-        <releaseChannel>Edge</releaseChannel>
 
         <!-- 🔧 Plugins de Build (Mule Maven, MUnit etc.) -->
         <mule.maven.plugin.version>4.3.0</mule.maven.plugin.version>
@@ -70,25 +65,8 @@
         <maven-clean-plugin.version>3.2.0</maven-clean-plugin.version>
 
         <!-- 🔌 Conectores Mule (HTTP, Sockets, etc.) -->
-        <http.connector.version>1.10.3</http.connector.version>
-        <sockets.connector.version>1.2.5</sockets.connector.version>
-
-	<!-- 🔏 Chave e Repositório -->
-	<key>Chave descript aqui...</key>
-	<serverId>Repository</serverId>
-	<anypoint.platform.url>https://anypoint.mulesoft.com</anypoint.platform.url>
-	<base.maven.anypoint.url>https://maven.anypoint.mulesoft.com/api/v2</base.maven.anypoint.url>
-	<anypoint.exchange.v2.url>${base.maven.anypoint.url}/maven</anypoint.exchange.v2.url>
-	<private.exchange.url>${base.maven.anypoint.url}/organizations/${project.groupId}/maven</private.exchange.url>
-	<!-- 🌐 Repositório de Releases da MuleSoft -->
-	<mulesoft.releases.repo.url>https://repository.mulesoft.org/releases/</mulesoft.releases.repo.url>
-
-
-        <!-- 🗄 Layouts de Repositório -->
-        <mulesoft-releases.layout>default</mulesoft-releases.layout>
-        <anypoint-exchange-v3.layout>default</anypoint-exchange-v3.layout>
-        <private-exchange-repository.layout>default</private-exchange-repository.layout>
-        <corporate-repository.layout>default</corporate-repository.layout>
+        <http.connector.version>1.10.4</http.connector.version>
+        <sockets.connector.version>1.2.6</sockets.connector.version>
     </properties>
 
     <!-- 
@@ -151,28 +129,12 @@
     =============================================================================
     -->
     <repositories>
-        <!-- Repositório do Anypoint Exchange v3 -->
-	<repository>
-	    <id>anypoint-exchange-v2</id>
-	    <name>Anypoint Exchange</name>
-	    <url>${anypoint.exchange.v2.url}</url>
-	    <layout>${anypoint-exchange-v2.layout}</layout>
-	</repository>
-
         <!-- Repositório de releases da MuleSoft -->
         <repository>
             <id>mulesoft-releases</id>
             <name>MuleSoft Releases Repository</name>
             <url>https://repository.mulesoft.org/releases/</url>
-            <layout>${mulesoft-releases.layout}</layout>
-        </repository>
-
-        <!-- Repositório privado / personalizado -->
-        <repository>
-            <id>${serverId}</id>
-            <name>Private Exchange repository</name>
-            <url>${private.exchange.url}</url>
-            <layout>${private-exchange-repository.layout}</layout>
+            <layout>default</layout>
         </repository>
     </repositories>
 
@@ -186,7 +148,7 @@
         <pluginRepository>
             <id>mulesoft-releases</id>
             <name>MuleSoft Releases Repository</name>
-            <layout>${mulesoft-releases.layout}</layout>
+            <layout>default</layout>
             <url>https://repository.mulesoft.org/releases/</url>
             <snapshots>
                 <enabled>false</enabled>
@@ -202,10 +164,10 @@
     -->
     <distributionManagement>
         <repository>
-            <id>${serverId}</id>
+            <id>Repository</id>
             <name>Corporate Repository</name>
-            <url>${private.exchange.url}</url>
-            <layout>${corporate-repository.layout}</layout>
+            <url>https://maven.anypoint.mulesoft.com/api/v2/organizations/${project.groupId}/maven</url>
+            <layout>default</layout>
         </repository>
     </distributionManagement>
 

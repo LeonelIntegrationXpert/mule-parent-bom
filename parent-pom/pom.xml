@@ -64,7 +64,7 @@
     -->
     <properties>
         <!-- ⚙️ Configurações de CloudHub (opcional) -->
-        <env>Sandbox</env>
+        <env>dev</env>
         <region>Cloudhub-US-East-2</region>
         <cloudhub.vcores>0.1</cloudhub.vcores>
         <cloudhub.replicas>1</cloudhub.replicas>
@@ -110,6 +110,14 @@
         <base.maven.anypoint.url>https://maven.anypoint.mulesoft.com/api/v2</base.maven.anypoint.url>
         <anypoint.exchange.v2.url>${base.maven.anypoint.url}/maven</anypoint.exchange.v2.url>
         <private.exchange.url>${base.maven.anypoint.url}/organizations/${project.groupId}/maven</private.exchange.url>
+
+        <!-- Ajustes de runtime (CH2.0) -->
+        <releaseChannel>EDGE</releaseChannel>
+        <java.version>17</java.version>
+
+        <!-- Business Group (usar apenas um) -->
+        <businessGroupId>9d86053c-c394-4e52-b33c-029e02b59822</businessGroupId>
+        <businessGroup></businessGroup>
     </properties>
 
     <!-- 
@@ -150,7 +158,7 @@
                             <server>${serverId}</server>
                             
                             <!-- Nome: "artifactId-layer-env" -->
-                            <applicationName>${app.namingPattern}</applicationName>
+                            <!-- <applicationName>${app.namingPattern}</applicationName> -->
 
                             <!-- Versão Mule + releaseChannel (LTS / EA) -->
                             <muleVersion>${app.runtime}</muleVersion>
@@ -161,14 +169,22 @@
                             <vCores>${cloudhub.vcores}</vCores>
                             <javaVersion>${java.version}</javaVersion>
 
+                            <!-- BG (usar apenas um) -->
+                            <businessGroupId>${businessGroupId}</businessGroupId>
+                            <businessGroup>${businessGroup}</businessGroup>
+
                             <!-- Configs adicionais de deployment -->
                             <deploymentSettings>
                                 <generateDefaultPublicUrl>${generateDefaultPublicUrl}</generateDefaultPublicUrl>
                                 <updateStrategy>rolling</updateStrategy>
-                                <lastMileSecurity>disabled</lastMileSecurity>
-                                <forwardSslSession>disabled</forwardSslSession>
-                                <disableAmLogForwarding>enabled</disableAmLogForwarding>
-                                <clustered>disabled</clustered>
+                                <http>
+                                  <inbound>
+                                    <lastMileSecurity>false</lastMileSecurity>
+                                    <forwardSslSession>false</forwardSslSession>
+                                  </inbound>
+                                </http>
+                                <disableAmLogForwarding>false</disableAmLogForwarding>
+                                <clustered>false</clustered>
                             </deploymentSettings>
 
                             <!-- Serviços integrados (Object Store V2, etc.) -->
@@ -248,7 +264,7 @@
             <id>${serverId}</id>
             <name>Corporate Repository</name>
             <url>${private.exchange.url}</url>
-            <layout>${corporate-repository.layout}</layout>
+            <layout>${repository.layout}</layout>
         </repository>
     </distributionManagement>
 
