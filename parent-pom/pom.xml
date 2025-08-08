@@ -35,7 +35,7 @@
     =============================================================================
     -->
     <parent>
-        <groupId>37a4147b-4673-4cb6-b589-358074a13f8c</groupId>
+        <groupId>9d86053c-c394-4e52-b33c-029e02b59822</groupId>
         <artifactId>common-bom</artifactId>
         <version>1.0.0</version>
     </parent>
@@ -46,7 +46,7 @@
        - Ajuste groupId/artifactId/version conforme sua org/repositório.
     =============================================================================
     -->
-    <groupId>37a4147b-4673-4cb6-b589-358074a13f8c</groupId>
+    <groupId>9d86053c-c394-4e52-b33c-029e02b59822</groupId>
     <artifactId>common-pom-parent</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
@@ -102,7 +102,7 @@
 
         <!-- 🔒 Repositório / Distribuição -->
         <serverId>Repository</serverId> <!-- Se usar Exchange v3, troque p/ 'Exchange3' -->
-        <organization.id>37a4147b-4673-4cb6-b589-358074a13f8c</organization.id>
+        <organization.id>9d86053c-c394-4e52-b33c-029e02b59822</organization.id>
         <repository.layout>default</repository.layout>
         
         <!-- (10) URLS / Repositórios -->

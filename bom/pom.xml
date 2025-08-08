@@ -38,7 +38,7 @@
        - packaging = pom (modelo BOM).
     =============================================================================
     -->
-    <groupId>37a4147b-4673-4cb6-b589-358074a13f8c</groupId>
+    <groupId>9d86053c-c394-4e52-b33c-029e02b59822</groupId>
     <artifactId>common-bom</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
@@ -60,14 +60,14 @@
         <java.version>8</java.version>
 
         <!-- 🏷 Mule Runtime e Release Channel (LTS/EA) -->
-        <app.runtime>4.6.14</app.runtime>
-        <releaseChannel>LTS</releaseChannel>
+        <app.runtime>4.9.0</app.runtime>
+        <releaseChannel>Edge</releaseChannel>
 
         <!-- 🔧 Plugins de Build (Mule Maven, MUnit etc.) -->
-        <mule.maven.plugin.version>4.4.0</mule.maven.plugin.version>
+        <mule.maven.plugin.version>4.3.0</mule.maven.plugin.version>
         <munit.version>3.2.1</munit.version>
         <assertions.version>1.0.2</assertions.version>
-        <maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
+        <maven-clean-plugin.version>3.2.0</maven-clean-plugin.version>
 
         <!-- 🔌 Conectores Mule (HTTP, Sockets, etc.) -->
         <http.connector.version>1.10.3</http.connector.version>

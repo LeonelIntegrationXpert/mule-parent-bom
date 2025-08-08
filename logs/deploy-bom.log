@@ -1,0 +1,22 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------< 9d86053c-c394-4e52-b33c-029e02b59822:common-bom >-----------
+[INFO] Building common-bom 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- install:3.1.1:install (default-install) @ common-bom ---
+[INFO] Installing C:\Users\leonel.d.porto\Desktop\Workspace\mule-parent-bom\bom\pom.xml to C:\Users\leonel.d.porto\.m2\repository\9d86053c-c394-4e52-b33c-029e02b59822\common-bom\1.0.0\common-bom-1.0.0.pom
+[INFO] 
+[INFO] --- deploy:3.1.1:deploy (default-deploy) @ common-bom ---
+[INFO] Uploading to Repository: https://maven.anypoint.mulesoft.com/api/v2/organizations/9d86053c-c394-4e52-b33c-029e02b59822/maven/9d86053c-c394-4e52-b33c-029e02b59822/common-bom/1.0.0/common-bom-1.0.0.pom
+[INFO] Uploaded to Repository: https://maven.anypoint.mulesoft.com/api/v2/organizations/9d86053c-c394-4e52-b33c-029e02b59822/maven/9d86053c-c394-4e52-b33c-029e02b59822/common-bom/1.0.0/common-bom-1.0.0.pom (9.5 kB at 4.6 kB/s)
+[INFO] Downloading from Repository: https://maven.anypoint.mulesoft.com/api/v2/organizations/9d86053c-c394-4e52-b33c-029e02b59822/maven/9d86053c-c394-4e52-b33c-029e02b59822/common-bom/maven-metadata.xml
+[INFO] Uploading to Repository: https://maven.anypoint.mulesoft.com/api/v2/organizations/9d86053c-c394-4e52-b33c-029e02b59822/maven/9d86053c-c394-4e52-b33c-029e02b59822/common-bom/maven-metadata.xml
+[INFO] Uploaded to Repository: https://maven.anypoint.mulesoft.com/api/v2/organizations/9d86053c-c394-4e52-b33c-029e02b59822/maven/9d86053c-c394-4e52-b33c-029e02b59822/common-bom/maven-metadata.xml (326 B at 387 B/s)
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.762 s
+[INFO] Finished at: 2025-08-07T22:39:21-03:00
+[INFO] ------------------------------------------------------------------------
